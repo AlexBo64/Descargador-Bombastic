@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 — Fase 7: Perfiles, historial y encadenado
+
+- Perfiles: guardan formato, calidad, incrustados, carpeta, modo avanzado, argumentos libres,
+  cookies y acción encadenada. Aplicar, renombrar, duplicar, eliminar, exportar e importar en
+  JSON y uno predeterminado que se aplica al abrir la app.
+- Historial en SQLite de cada descarga terminada (fecha, título, enlace, archivos, tamaño,
+  perfil, resultado y error), con búsqueda, filtro, volver a descargar con las mismas opciones,
+  abrir archivo o carpeta, enviar al editor, borrar entradas y vaciar.
+- Evitar duplicados con `--download-archive` gestionado por la app (opcional, en Ajustes).
+- Acciones encadenadas descarga → edición: convertir, recortar, comprimir a un tamaño,
+  normalizar, extraer audio, cambiar resolución o una receta. La tarea entra sola en la cola
+  de edición, el historial enlaza el resultado y se puede borrar el original al terminar.
+
 ## 0.7.0 — Fase 6: Modo experto y recetas
 
 - Pestaña **Experto** del editor: comando de ffmpeg con resaltado básico (opciones,

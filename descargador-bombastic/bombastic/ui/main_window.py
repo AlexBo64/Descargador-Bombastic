@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -20,13 +22,16 @@ from PySide6.QtWidgets import (
 from bombastic import APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool
+from bombastic.core.chain import ChainRunner
 from bombastic.core.edit_manager import EditManager
+from bombastic.core.history import HistoryRecorder, HistoryStore, ProfileStore
 from bombastic.core.i18n import tr
-from bombastic.core.media_prober import tool_launcher
+from bombastic.core.media_prober import MediaProber, tool_launcher
 from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.editor_page import EditorPage
+from bombastic.ui.history_page import HistoryPage
 from bombastic.ui.library_page import LibraryPage
 from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.queue_page import QueuePage
@@ -34,7 +39,7 @@ from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
-_PLACEHOLDER_PHASES = {"history": 7}
+_PLACEHOLDER_PHASES: dict[str, int] = {}
 
 
 class MainWindow(QMainWindow):
@@ -66,7 +71,8 @@ class MainWindow(QMainWindow):
 
         # --- Páginas ---
         self.stack = QStackedWidget()
-        self.downloads_page = DownloadsPage(ctx)
+        self.profiles = ProfileStore(ctx.db)
+        self.downloads_page = DownloadsPage(ctx, profiles=self.profiles)
         self.edit_manager = EditManager(
             tool_launcher(ctx.paths, Tool.FFMPEG),
             self,
@@ -75,7 +81,27 @@ class MainWindow(QMainWindow):
         )
         self.recipes = RecipeStore(ctx.db)
         self.editor_page = EditorPage(ctx, self.edit_manager, recipes=self.recipes)
-        self.library_page = LibraryPage(self.recipes)
+        self.library_page = LibraryPage(self.recipes, self.profiles)
+        self.library_page.profiles_view.apply_requested.connect(self._apply_profile)
+        self.library_page.profiles_view.changed.connect(self.downloads_page.refresh_profiles)
+        self.downloads_page.profiles_changed.connect(self.library_page.profiles_view.refresh)
+        self.history = HistoryStore(ctx.db)
+        self.history_page = HistoryPage(self.history)
+        downloads = self.downloads_page.manager
+        self.history_recorder = HistoryRecorder(downloads, self.history, self)
+        self.history_recorder.recorded.connect(lambda _id: self.history_page.refresh())
+        self.history_page.redownload_requested.connect(
+            lambda entry: downloads.requeue(entry.url, entry.options)
+        )
+        self.history_page.edit_requested.connect(self._edit_file)
+        self.chain = ChainRunner(
+            downloads,
+            self.edit_manager,
+            MediaProber(tool_launcher(ctx.paths, Tool.FFPROBE), self),
+            self.recipes,
+            self,
+        )
+        self.edit_manager.task_completed.connect(self._link_chained_edit)
         self.library_page.recipes_view.open_requested.connect(self._open_recipe)
         self.library_page.recipes_view.changed.connect(self.editor_page.expert_form.refresh_recipes)
         self.queue_page = QueuePage(
@@ -88,6 +114,7 @@ class MainWindow(QMainWindow):
             "queue": self.queue_page,
             "editor": self.editor_page,
             "library": self.library_page,
+            "history": self.history_page,
             "settings": self.settings_page,
         }
         self.pages: dict[str, Page] = {}
@@ -118,6 +145,9 @@ class MainWindow(QMainWindow):
         self.retranslate()
         self._refresh_icons()
         self._restore_state()
+        default = self.profiles.default()
+        if default is not None and not ctx.settings.active_profile:
+            self.downloads_page.apply_profile(default)
         # Con las páginas ya conectadas, para que la cola guardada aparezca en ellas.
         self.downloads_page.manager.restore()
         self.edit_manager.restore()
@@ -179,6 +209,25 @@ class MainWindow(QMainWindow):
         self._ctx.save_settings()
         self._unsubscribe()
         super().closeEvent(event)
+
+    def _apply_profile(self, profile_id: int) -> None:
+        profile = self.profiles.get(profile_id)
+        if profile is not None:
+            self.downloads_page.apply_profile(profile)
+            self.show_page("downloads")
+
+    def _edit_file(self, path: str) -> None:
+        self.show_page("editor")
+        self.editor_page.open_file(Path(path))
+
+    def _link_chained_edit(self, task_id: int) -> None:
+        """Apunta en el historial el resultado de la edición encadenada a una descarga."""
+        item_id = self.chain.task_download.get(task_id)
+        entry_id = self.history_recorder.entry_for.get(item_id) if item_id else None
+        task = self.edit_manager.task(task_id)
+        if entry_id is not None and task is not None:
+            self.history.set_edit_output(entry_id, task.plan.output)
+            self.history_page.refresh()
 
     def _open_recipe(self, recipe_id: int) -> None:
         self.show_page("editor")

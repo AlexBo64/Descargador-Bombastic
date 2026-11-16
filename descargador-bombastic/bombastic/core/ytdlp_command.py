@@ -57,6 +57,10 @@ class DownloadOptions:
     format_spec: str = ""
     #: Argumentos del modo avanzado, las cookies y los argumentos libres, en ese orden.
     extra_args: tuple[str, ...] = ()
+    #: Acción encadenada del editor (JSON de ``chain.ChainAction``), vacío = ninguna.
+    chain: str = ""
+    #: Perfil con el que se pidió la descarga (para el historial).
+    profile: str = ""
 
 
 def options_to_dict(options: DownloadOptions) -> dict[str, Any]:

@@ -74,6 +74,12 @@ class Settings:
     cookies_browser: str = "chrome"
     cookies_profile: str = ""
     cookies_file: str = ""
+    #: Acción encadenada tras cada descarga (JSON de ``chain.ChainAction``).
+    chain_action: str = ""
+    #: Perfil elegido en la página de descargas (vacío = ninguno).
+    active_profile: str = ""
+    #: Evitar descargar dos veces lo mismo con ``--download-archive``.
+    use_download_archive: bool = False
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""

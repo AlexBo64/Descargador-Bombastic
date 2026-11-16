@@ -117,6 +117,20 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - El modo experto quita del comando `-y`, `-progress`, `-nostats`… y pone los suyos para
   poder mostrar el progreso.
 
+## Perfiles, historial y encadenado (Fase 7)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/history.py` | `HistoryStore`, `HistoryRecorder` (apunta cada descarga terminada) y perfiles |
+| `core/chain.py` | `ChainAction` (va en `DownloadOptions.chain`), plan de edición y `ChainRunner` |
+| `ui/history_page.py` | Página de historial |
+| `ui/library_page.py` | Pestañas Perfiles y Recetas |
+
+- La acción encadenada viaja como JSON dentro de las opciones de la descarga: se guarda con la
+  cola, con los perfiles y con el historial sin tablas aparte.
+- Un perfil es una copia de los ajustes de `PROFILE_FIELDS`; al importar se descartan claves
+  desconocidas.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

@@ -67,6 +67,30 @@ MIGRATIONS: tuple[str, ...] = (
         created_at TEXT NOT NULL
     );
     """,
+    # 4 — Fase 7: historial y perfiles.
+    """
+    CREATE TABLE history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at TEXT NOT NULL,
+        title TEXT NOT NULL,
+        url TEXT NOT NULL,
+        files TEXT NOT NULL DEFAULT '[]',
+        size INTEGER,
+        profile TEXT NOT NULL DEFAULT '',
+        result TEXT NOT NULL,
+        error TEXT NOT NULL DEFAULT '',
+        options TEXT,
+        edit_output TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX history_created ON history(created_at);
+    CREATE TABLE profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        data TEXT NOT NULL DEFAULT '{}',
+        is_default INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

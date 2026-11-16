@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 6 (Modo experto y recetas).** Comandos de ffmpeg a mano con variables,
+> **Estado: Fase 7 (Perfiles, historial y encadenado).** Perfiles de opciones, historial con
+> búsqueda y acciones de edición encadenadas a cada descarga.
+>
+> **Fase 6 (Modo experto y recetas):** Comandos de ffmpeg a mano con variables,
 > lista de filtros, recetas reutilizables y "Abrir en modo experto" desde cualquier herramienta.
 >
 > **Fase 5 (Editor completo):** Las 14 herramientas del editor, previsualización del
@@ -74,6 +77,14 @@ Qué comprobar:
 18. Desde cualquier herramienta, "Abrir en modo experto" copia su comando para retocarlo.
 19. **Perfiles y recetas** (`Ctrl+5`) lista las recetas: abrir, renombrar, duplicar, favorita,
     eliminar, exportar e importar en JSON.
+20. En Descargas, "Después de descargar" encadena una edición (convertir, recortar, comprimir a
+    MB, normalizar, extraer audio, cambiar resolución o una receta) que entra sola en la cola
+    de edición al terminar, con opción de borrar el original.
+21. "Guardar como perfil…" guarda todas las opciones; en **Perfiles y recetas → Perfiles** se
+    aplican, duplican, exportan/importan y se marca uno como predeterminado (se aplica al abrir).
+22. **Historial** (`Ctrl+4`): búsqueda, filtro por resultado, volver a descargar con las mismas
+    opciones, abrir archivo o carpeta, enviar al editor, borrar y vaciar. En Ajustes, "Evitar
+    descargar dos veces lo mismo" activa `--download-archive` gestionado por la app.
 
 ### Modo portable
 
@@ -126,7 +137,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 4 | Editor básico | Hecha |
 | 5 | Editor completo | Hecha |
 | 6 | Modo experto y recetas | Hecha |
-| 7 | Perfiles, historial y encadenado | Pendiente |
+| 7 | Perfiles, historial y encadenado | Hecha |
 | 8 | Actualizaciones | Pendiente |
 | 9 | Integración con Windows | Pendiente |
 | 10 | Distribución (instalador, portable, GitHub Actions de release) | Pendiente |

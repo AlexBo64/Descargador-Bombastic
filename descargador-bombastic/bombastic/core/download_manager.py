@@ -309,12 +309,21 @@ class DownloadManager(QObject):
         item = self._items.get(item_id)
         if item is None or item.state not in STARTABLE:
             return False
-        is_playlist = item.info.is_playlist if item.info is not None else False
+        is_playlist = item.info.is_playlist if item.info is not None else options.playlist
         item.options = replace(options, playlist=is_playlist)
         if item.state is ItemState.READY:
             item.position = self._last_position() + 1
         self._enqueue(item)
         return True
+
+    def requeue(self, url: str, options: DownloadOptions) -> int:
+        """Mete en la cola un enlace ya conocido (por ejemplo, desde el historial)."""
+        item = DownloadItem(self._next_id, url, state=ItemState.READY, created_at=now_iso())
+        self._next_id += 1
+        self._items[item.item_id] = item
+        self.item_added.emit(item.item_id)
+        self.start(item.item_id, options)
+        return item.item_id
 
     def retry(self, item_id: int) -> bool:
         """Vuelve a descargar con las mismas opciones."""

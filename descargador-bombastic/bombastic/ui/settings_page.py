@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
@@ -99,6 +100,9 @@ class SettingsPage(Page):
         ):
             label.setBuddy(widget)
             form.addRow(label, widget)
+        self.archive_check = QCheckBox()
+        self.archive_check.setChecked(settings.use_download_archive)
+        form.addRow(self.archive_check)
         column.addWidget(self.downloads_box)
 
         # --- Editor: aceleración por hardware ---
@@ -196,6 +200,7 @@ class SettingsPage(Page):
         self.concurrent_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.retries_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.edits_spin.valueChanged.connect(self._on_queue_settings_changed)
+        self.archive_check.toggled.connect(self._on_archive_toggled)
         self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
         self.catalog_button.clicked.connect(self.refresh_catalog)
@@ -226,6 +231,8 @@ class SettingsPage(Page):
         self.retries_spin.setToolTip(tr("settings.auto_retries.tooltip"))
         self.rate_label.setText(tr("settings.rate_limit"))
         self.edits_label.setText(tr("settings.max_concurrent_edits"))
+        self.archive_check.setText(tr("settings.download_archive"))
+        self.archive_check.setToolTip(tr("settings.download_archive.tooltip"))
         self.rate_edit.setPlaceholderText(tr("settings.rate_limit.placeholder"))
         self.rate_edit.setToolTip(tr("settings.rate_limit.tooltip"))
 
@@ -306,6 +313,10 @@ class SettingsPage(Page):
         settings.rate_limit = rate
         self._ctx.save_settings()
         self.queue_settings_changed.emit()
+
+    def _on_archive_toggled(self, checked: bool) -> None:
+        self._ctx.settings.use_download_archive = checked
+        self._ctx.save_settings()
 
     def _browse_download_dir(self) -> None:
         chosen = QFileDialog.getExistingDirectory(

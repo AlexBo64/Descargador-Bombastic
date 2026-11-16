@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
@@ -25,7 +26,9 @@ from PySide6.QtWidgets import (
 
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool, locate
+from bombastic.core.chain import CHAIN_KINDS, ChainAction
 from bombastic.core.download_manager import STAGING, DownloadManager, ItemState
+from bombastic.core.history import PROFILE_FIELDS, Profile, ProfileStore
 from bombastic.core.i18n import tr
 from bombastic.core.paths import resources_dir
 from bombastic.core.thumbnails import ThumbnailLoader
@@ -63,10 +66,14 @@ _PREVIEW_URL = "https://www.youtube.com/watch?v=…"
 
 
 class DownloadsPage(Page):
+    #: Se ha guardado un perfil desde esta página.
+    profiles_changed = Signal()
+
     def __init__(
         self,
         ctx: AppContext,
         launcher: Launcher | None = None,
+        profiles: ProfileStore | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__("downloads", parent)
@@ -143,6 +150,33 @@ class DownloadsPage(Page):
         advanced_row.addWidget(self.advanced_button)
         advanced_row.addWidget(self.advanced_status, 1)
         grid.addLayout(advanced_row, 2, 1)
+
+        # --- Acción encadenada y perfil ---
+        self.profiles = profiles if profiles is not None else ProfileStore(ctx.db)
+        self.chain_label = QLabel()
+        self.chain_combo = QComboBox()
+        self.chain_combo.setObjectName("ChainCombo")
+        self.chain_value = QLineEdit()
+        self.chain_value.setMaximumWidth(220)
+        self.chain_delete = QCheckBox()
+        chain_row = QHBoxLayout()
+        chain_row.setSpacing(10)
+        chain_row.addWidget(self.chain_combo)
+        chain_row.addWidget(self.chain_value)
+        chain_row.addWidget(self.chain_delete)
+        chain_row.addStretch(1)
+        grid.addWidget(self.chain_label, 3, 0)
+        grid.addLayout(chain_row, 3, 1)
+        self.profile_label = QLabel()
+        self.profile_combo = QComboBox()
+        self.profile_combo.setObjectName("ProfileCombo")
+        self.save_profile_button = QPushButton()
+        profile_row = QHBoxLayout()
+        profile_row.setSpacing(10)
+        profile_row.addWidget(self.profile_combo, 1)
+        profile_row.addWidget(self.save_profile_button)
+        grid.addWidget(self.profile_label, 4, 0)
+        grid.addLayout(profile_row, 4, 1)
         grid.setColumnStretch(1, 1)
 
         self.warning_label = QLabel()
@@ -203,6 +237,11 @@ class DownloadsPage(Page):
         self.manager.item_removed.connect(self._on_item_removed)
         self.thumbnails.loaded.connect(self._on_thumbnail_loaded)
 
+        self.chain_combo.currentIndexChanged.connect(self._on_chain_changed)
+        self.chain_value.editingFinished.connect(self._on_chain_changed)
+        self.chain_delete.toggled.connect(self._on_chain_changed)
+        self.profile_combo.activated.connect(self._on_profile_chosen)
+        self.save_profile_button.clicked.connect(self._ask_profile_name)
         self.subs_check.setChecked(ctx.settings.embed_subs)
         self.extras_check.setChecked(ctx.settings.embed_extras)
         self.retranslate()
@@ -240,6 +279,12 @@ class DownloadsPage(Page):
         self.open_folder_button.setText(tr("downloads.open_folder"))
         self.advanced_button.setText(tr("downloads.advanced"))
         self._show_advanced_status()
+        self.chain_label.setText(tr("downloads.chain"))
+        self.chain_delete.setText(tr("downloads.chain.delete_original"))
+        self.profile_label.setText(tr("downloads.profile"))
+        self.save_profile_button.setText(tr("downloads.profile.save"))
+        self.refresh_profiles()
+        self._show_chain()
 
         self.download_all_button.setText(tr("downloads.download_all"))
         self.clear_button.setText(tr("downloads.clear_finished"))
@@ -304,6 +349,8 @@ class DownloadsPage(Page):
             embed_extras=self.extras_check.isChecked(),
             ffmpeg_dir=ffmpeg.path.parent if ffmpeg.path is not None else None,
             extra_args=tuple(extra_args),
+            chain=self._ctx.settings.chain_action,
+            profile=self._ctx.settings.active_profile,
         )
 
     # ------------------------------------------------------------ modo avanzado
@@ -324,11 +371,113 @@ class DownloadsPage(Page):
         )
         if settings.advanced_options:
             args += build_advanced_args(self.catalog(), settings.advanced_options)
+        if settings.use_download_archive:
+            # Lo gestiona la app: un archivo por usuario en la carpeta de datos.
+            args += ["--download-archive", str(self._ctx.paths.data_dir / "download-archive.txt")]
         try:
             args += split_extra_args(settings.extra_args)
         except ExtraArgsError:
             return args, False
         return args, True
+
+    # ------------------------------------------------------ encadenado y perfiles
+
+    def _show_chain(self) -> None:
+        action = ChainAction.from_json(self._ctx.settings.chain_action)
+        self.chain_combo.blockSignals(True)
+        self.chain_combo.clear()
+        for kind in CHAIN_KINDS:
+            self.chain_combo.addItem(tr(f"downloads.chain.{kind}"), kind)
+        self.chain_combo.setCurrentIndex(max(0, self.chain_combo.findData(action.kind)))
+        self.chain_combo.blockSignals(False)
+        self.chain_value.blockSignals(True)
+        self.chain_value.setText(action.value)
+        self.chain_value.blockSignals(False)
+        self.chain_delete.blockSignals(True)
+        self.chain_delete.setChecked(action.delete_original)
+        self.chain_delete.blockSignals(False)
+        self._sync_chain_controls()
+
+    def _sync_chain_controls(self) -> None:
+        kind = str(self.chain_combo.currentData() or "none")
+        active = kind != "none"
+        self.chain_value.setVisible(active)
+        self.chain_delete.setVisible(active)
+        self.chain_value.setPlaceholderText(
+            tr(f"downloads.chain.{kind}.placeholder") if active else ""
+        )
+
+    def _on_chain_changed(self) -> None:
+        kind = str(self.chain_combo.currentData() or "none")
+        action = ChainAction(kind, self.chain_value.text().strip(), self.chain_delete.isChecked())
+        self._ctx.settings.chain_action = action.to_json()
+        self._ctx.save_settings()
+        self._sync_chain_controls()
+
+    def refresh_profiles(self) -> None:
+        self.profile_combo.blockSignals(True)
+        self.profile_combo.clear()
+        self.profile_combo.addItem(tr("downloads.profile.none"), "")
+        for profile in self.profiles.all():
+            star = " ★" if profile.is_default else ""
+            self.profile_combo.addItem(profile.name + star, profile.name)
+        index = self.profile_combo.findData(self._ctx.settings.active_profile)
+        self.profile_combo.setCurrentIndex(max(0, index))
+        self.profile_combo.blockSignals(False)
+
+    def _on_profile_chosen(self, index: int) -> None:
+        name = str(self.profile_combo.itemData(index) or "")
+        profile = self.profiles.by_name(name) if name else None
+        if profile is None:
+            self._ctx.settings.active_profile = ""
+            self._ctx.save_settings()
+            return
+        self.apply_profile(profile)
+
+    def apply_profile(self, profile: Profile) -> None:
+        """Copia las opciones del perfil a los ajustes y a los controles de la página."""
+        settings = self._ctx.settings
+        for key, value in profile.values.items():
+            if key in PROFILE_FIELDS and type(value) is type(getattr(settings, key)):
+                setattr(settings, key, value)
+        settings.active_profile = profile.name
+        settings.sanitize()
+        self._ctx.save_settings()
+        self.subs_check.blockSignals(True)
+        self.extras_check.blockSignals(True)
+        self.subs_check.setChecked(settings.embed_subs)
+        self.extras_check.setChecked(settings.embed_extras)
+        self.subs_check.blockSignals(False)
+        self.extras_check.blockSignals(False)
+        self.retranslate()
+        self._set_feedback("")
+        self.feedback_label.setText(tr("downloads.profile.applied", name=profile.name))
+        self.feedback_label.setVisible(True)
+
+    def save_profile(self, name: str) -> Profile:
+        """Guarda las opciones actuales como perfil (o actualiza el que tiene ese nombre)."""
+        settings = self._ctx.settings
+        values = {key: getattr(settings, key) for key in PROFILE_FIELDS}
+        existing = self.profiles.by_name(name)
+        profile = Profile(name, values)
+        if existing is not None:
+            profile.profile_id, profile.is_default = existing.profile_id, existing.is_default
+        self.profiles.save(profile)
+        settings.active_profile = profile.name
+        self._ctx.save_settings()
+        self.refresh_profiles()
+        self.profiles_changed.emit()
+        return profile
+
+    def _ask_profile_name(self) -> None:
+        name, ok = QInputDialog.getText(
+            self,
+            tr("downloads.profile.save"),
+            tr("expert.save.name"),
+            text=self._ctx.settings.active_profile,
+        )
+        if ok and name.strip():
+            self.save_profile(name.strip())
 
     def command_preview(self) -> tuple[str, list[str]]:
         """Comando final de ejemplo y conflictos detectados, para el diálogo avanzado."""
