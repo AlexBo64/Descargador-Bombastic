@@ -21,6 +21,9 @@ TIMEOUT = 20_000
 def editor(qtbot: QtBot, ctx: AppContext, fake_ffmpeg: Launcher) -> tuple[EditorPage, EditManager]:
     manager = EditManager(fake_ffmpeg)
     page = EditorPage(ctx, manager, probe_launcher=fake_ffmpeg)
+    # El archivo de prueba no es un vídeo real: sin esto se generaría la copia ligera y su
+    # mensaje podría pisar el que comprueba el test (la copia tiene su propio test).
+    page.player.playback_failed.disconnect(page._on_playback_failed)
     qtbot.addWidget(page)
     page.show()
     return page, manager
