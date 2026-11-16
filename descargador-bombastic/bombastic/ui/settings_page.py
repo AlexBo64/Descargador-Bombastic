@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
     QComboBox,
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -26,11 +27,14 @@ from bombastic.context import AppContext
 from bombastic.core.binaries import BinaryStatus, Tool, locate_all
 from bombastic.core.binary_probe import BinaryProbe
 from bombastic.core.i18n import tr
-from bombastic.core.settings import LANGUAGES, THEMES
+from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
 from bombastic.ui.pages import Page
 
 
 class SettingsPage(Page):
+    #: Han cambiado las descargas simultáneas, los reintentos o el límite de velocidad.
+    queue_settings_changed = Signal()
+
     def __init__(self, ctx: AppContext, parent: QWidget | None = None) -> None:
         super().__init__("settings", parent)
         self._ctx = ctx
@@ -68,6 +72,25 @@ class SettingsPage(Page):
         row.addWidget(self.download_dir_edit, 1)
         row.addWidget(self.browse_button)
         form.addRow(self.download_dir_label, row)
+        settings = ctx.settings
+        self.concurrent_label = QLabel()
+        self.concurrent_spin = QSpinBox()
+        self.concurrent_spin.setRange(1, 8)
+        self.concurrent_spin.setValue(settings.max_concurrent)
+        self.retries_label = QLabel()
+        self.retries_spin = QSpinBox()
+        self.retries_spin.setRange(0, 10)
+        self.retries_spin.setValue(settings.auto_retries)
+        self.rate_label = QLabel()
+        self.rate_edit = QLineEdit(settings.rate_limit)
+        self.rate_edit.setMaxLength(12)
+        for label, widget in (
+            (self.concurrent_label, self.concurrent_spin),
+            (self.retries_label, self.retries_spin),
+            (self.rate_label, self.rate_edit),
+        ):
+            label.setBuddy(widget)
+            form.addRow(label, widget)
         column.addWidget(self.downloads_box)
 
         # --- Dependencias ---
@@ -140,6 +163,9 @@ class SettingsPage(Page):
         self.language_combo.currentIndexChanged.connect(self._on_language_changed)
         self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
         self.browse_button.clicked.connect(self._browse_download_dir)
+        self.concurrent_spin.valueChanged.connect(self._on_queue_settings_changed)
+        self.retries_spin.valueChanged.connect(self._on_queue_settings_changed)
+        self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
         self.open_bin_button.clicked.connect(lambda: self._open_folder(ctx.paths.bin_dir))
         self.open_logs_button.clicked.connect(lambda: self._open_folder(ctx.paths.logs_dir))
@@ -161,6 +187,12 @@ class SettingsPage(Page):
         self.download_dir_label.setText(tr("settings.download_dir"))
         self.browse_button.setText(tr("settings.browse"))
         self.download_dir_edit.setText(self.download_dir())
+        self.concurrent_label.setText(tr("settings.max_concurrent"))
+        self.retries_label.setText(tr("settings.auto_retries"))
+        self.retries_spin.setToolTip(tr("settings.auto_retries.tooltip"))
+        self.rate_label.setText(tr("settings.rate_limit"))
+        self.rate_edit.setPlaceholderText(tr("settings.rate_limit.placeholder"))
+        self.rate_edit.setToolTip(tr("settings.rate_limit.tooltip"))
 
         self.dependencies_box.setTitle(tr("settings.dependencies"))
         self.dependencies_hint.setText(tr("settings.dependencies.hint"))
@@ -216,6 +248,19 @@ class SettingsPage(Page):
         self._ctx.settings.theme = theme
         self._ctx.save_settings()
         self._ctx.theme.apply(theme)
+
+    def _on_queue_settings_changed(self) -> None:
+        settings = self._ctx.settings
+        rate = self.rate_edit.text().strip().upper()
+        if not is_valid_rate(rate):
+            # Se vuelve al último valor válido en lugar de guardar algo que yt-dlp rechazaría.
+            self.rate_edit.setText(settings.rate_limit)
+            rate = settings.rate_limit
+        settings.max_concurrent = self.concurrent_spin.value()
+        settings.auto_retries = self.retries_spin.value()
+        settings.rate_limit = rate
+        self._ctx.save_settings()
+        self.queue_settings_changed.emit()
 
     def _browse_download_dir(self) -> None:
         chosen = QFileDialog.getExistingDirectory(

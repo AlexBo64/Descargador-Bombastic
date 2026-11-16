@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from bombastic.core.db import Database
 from bombastic.core.i18n import Translator
 from bombastic.core.paths import AppPaths, default_download_dir
 from bombastic.core.settings import Settings, SettingsStore
@@ -17,6 +18,8 @@ class AppContext:
     store: SettingsStore
     translator: Translator
     theme: ThemeManager
+    #: Base de datos (``None`` en los tests que no la necesitan).
+    db: Database | None = None
 
     def save_settings(self) -> None:
         self.store.save(self.settings)

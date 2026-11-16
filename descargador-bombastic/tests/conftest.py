@@ -10,12 +10,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
 
 from bombastic.context import AppContext
 from bombastic.core import i18n
+from bombastic.core.download_manager import DownloadManager
 from bombastic.core.paths import AppPaths, resources_dir
 from bombastic.core.settings import SettingsStore
 from bombastic.core.ytdlp_runner import Launch, Launcher
@@ -55,3 +58,26 @@ def ctx(qapp: QApplication, paths: AppPaths, translator: i18n.Translator) -> Ite
     theme.apply("dark")
     yield AppContext(paths, store.load(), store, translator, theme)
     qapp.setStyleSheet("")
+
+
+@pytest.fixture(autouse=True)
+def _dispose_managers(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Cierra y borra con Qt los gestores sin padre creados en cada test.
+
+    Si se dejara que el recolector de Python los destruyera (en cualquier momento de un test
+    posterior), Qt podría abortar. En la app el gestor cuelga de una página y vive toda la sesión.
+    """
+    created: list[DownloadManager] = []
+    original = DownloadManager.__init__
+
+    def init(self: DownloadManager, *args: Any, **kwargs: Any) -> None:
+        original(self, *args, **kwargs)
+        if self.parent() is None:
+            created.append(self)
+
+    monkeypatch.setattr(DownloadManager, "__init__", init)
+    yield
+    for manager in created:
+        manager.shutdown()
+        manager.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)

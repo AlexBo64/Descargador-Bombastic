@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,14 @@ log = logging.getLogger(__name__)
 LANGUAGES: tuple[str, ...] = ("es", "en")
 THEMES: tuple[str, ...] = ("system", "dark", "light")
 PAGES: tuple[str, ...] = ("downloads", "queue", "editor", "history", "library", "settings")
+
+_RATE = re.compile(r"^\d+(\.\d+)?[KMG]?$", re.IGNORECASE)
+
+
+def is_valid_rate(text: str) -> bool:
+    """Límite de velocidad aceptado por ``--limit-rate`` (vacío = sin límite)."""
+    return not text or bool(_RATE.match(text))
+
 
 MIN_WINDOW_WIDTH = 900
 MIN_WINDOW_HEIGHT = 600
@@ -38,6 +47,11 @@ class Settings:
     mp3_quality: str = DEFAULT_MP3_QUALITY
     embed_subs: bool = False
     embed_extras: bool = False
+    #: Cola de descargas.
+    max_concurrent: int = 3
+    auto_retries: int = 2
+    #: Límite global de velocidad para yt-dlp (``500K``, ``2M``…); vacío = sin límite.
+    rate_limit: str = ""
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""
@@ -52,6 +66,10 @@ class Settings:
             self.download_preset = defaults.download_preset
         if self.mp3_quality not in MP3_QUALITIES:
             self.mp3_quality = defaults.mp3_quality
+        self.max_concurrent = max(1, min(self.max_concurrent, 8))
+        self.auto_retries = max(0, min(self.auto_retries, 10))
+        if not is_valid_rate(self.rate_limit):
+            self.rate_limit = defaults.rate_limit
         self.window_width = max(MIN_WINDOW_WIDTH, min(self.window_width, 10_000))
         self.window_height = max(MIN_WINDOW_HEIGHT, min(self.window_height, 10_000))
 

@@ -102,6 +102,11 @@ def test_status_text_for_every_state(translator: object) -> None:
     item.state = ItemState.FAILED
     item.error_code, item.error_detail = ERROR_YTDLP, "Video unavailable"
     assert status_text(item) == "Error: Video unavailable"
+    item.error_code = "private"
+    assert status_text(item) == "Error: Este vídeo es privado"
+    item.state = ItemState.PAUSED
+    assert status_text(item) == "En pausa"
+    item.state = ItemState.FAILED
     item.error_code, item.error_detail = "exit_code", "3"
     assert status_text(item) == "Error: yt-dlp terminó con el código 3 sin explicar el motivo"
     item.state = ItemState.INFO_ERROR
@@ -291,10 +296,10 @@ def test_download_from_the_card_with_the_chosen_options(
     assert options.output_dir == tmp_path / "descargas ñ"
 
     page.cards[1].download_button.click()
+    # La tarjeta pasa a la Cola y la página lo indica.
+    assert page.cards == {}
+    assert page.feedback_label.text().startswith("Enviado a la Cola")
     _wait_state(qtbot, page, 1, ItemState.COMPLETED)
-    card = page.cards[1]
-    assert card.status_label.full_text() == "Completado: Vídeo de prueba ñ.mp3"
-    assert card.open_button.isVisible()
     assert (tmp_path / "descargas ñ" / "Vídeo de prueba ñ.mp3").is_file()
     item = page.manager.item(1)
     assert item is not None
@@ -302,28 +307,25 @@ def test_download_from_the_card_with_the_chosen_options(
     assert "--embed-thumbnail" in item.command
 
 
-def test_cancel_download_all_and_clear_finished(qtbot: QtBot, page: DownloadsPage) -> None:
-    page.add_text("https://example.com/slow https://example.com/fail https://example.com/video")
-    for item_id in (1, 2, 3):
-        _wait_state(qtbot, page, item_id, ItemState.READY)
+def test_download_all_and_clear_info_errors(qtbot: QtBot, page: DownloadsPage) -> None:
+    page.add_text("https://example.com/slow https://example.com/badinfo https://example.com/v")
+    _wait_state(qtbot, page, 1, ItemState.READY)
+    _wait_state(qtbot, page, 2, ItemState.INFO_ERROR)
+    _wait_state(qtbot, page, 3, ItemState.READY)
+    assert page.clear_button.isEnabled()
 
     page.download_all_button.click()
+    assert list(page.cards) == [2]
     assert page.has_active_downloads()
     assert not page.download_all_button.isEnabled()
-    assert page.cards[2].status_label.full_text() == "En espera de que termine la descarga en curso"
-    qtbot.waitUntil(lambda: page.cards[1].cancel_button.isVisible(), timeout=TIMEOUT)
-
-    page.cards[1].cancel_button.click()
-    _wait_state(qtbot, page, 1, ItemState.CANCELLED)
-    _wait_state(qtbot, page, 2, ItemState.FAILED)
-    _wait_state(qtbot, page, 3, ItemState.COMPLETED)
-    assert page.cards[1].status_label.full_text() == "Cancelado"
-    assert page.cards[2].status_label.full_text().startswith("Error: [fake] abc: Video unavailable")
-    assert not page.has_active_downloads()
 
     page.clear_button.click()
     assert page.cards == {}
     assert page.empty_label.isVisible()
+    page.manager.cancel(1)
+    _wait_state(qtbot, page, 1, ItemState.CANCELLED)
+    _wait_state(qtbot, page, 3, ItemState.COMPLETED)
+    assert not page.has_active_downloads()
 
 
 def test_remove_card_and_change_folder(

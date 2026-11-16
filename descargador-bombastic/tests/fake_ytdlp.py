@@ -8,6 +8,7 @@ palabras que aparezcan en el enlace:
 - ``garbage``: la consulta de metadatos devuelve algo que no es JSON.
 - ``fail``: la descarga falla con un error de yt-dlp.
 - ``crash``: la descarga termina con código 3 sin explicar nada.
+- ``flaky``: la descarga falla con un error de red (se reintenta sola).
 - ``slowinfo``: la consulta de metadatos no termina nunca.
 - ``slow``: la descarga no termina nunca (para probar cancelaciones).
 """
@@ -86,6 +87,9 @@ def download(args: list[str], url: str) -> int:
     out(f"[fake] Extracting URL: {url}")
     if "fail" in url:
         out("ERROR: [fake] abc: Video unavailable. This video is private", "stderr")
+        return 1
+    if "flaky" in url:
+        out("ERROR: [fake] abc: Unable to download webpage: The read operation timed out", "stderr")
         return 1
     if "crash" in url:
         return 3

@@ -56,3 +56,9 @@ Una fase no está terminada hasta que `ruff check .`, `ruff format --check .`, `
 - `yt-dlp.exe` se relanza a sí mismo como proceso hijo: cancelar exige matar el árbol
   (`platform_win/process.py`).
 - Tests: `tests/fake_ytdlp.py` imita la salida de yt-dlp; nunca se usan binarios reales.
+- Nunca borrar un `QProcess` (ni su dueño) con el proceso vivo: Qt aborta más tarde sin mensaje.
+  En los tests, `conftest.py` cierra y borra con Qt los `DownloadManager` sin padre al acabar
+  cada test; no dejar que los recolecte Python.
+- Para ver los mensajes de Qt en Windows: `QT_FORCE_STDERR_LOGGING=1`.
+- No cambiar `LOCALAPPDATA` al lanzar `python` del gestor de instalaciones de Windows: cree que
+  no hay Python e instala uno. Usa la ruta completa del intérprete.

@@ -4,9 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 1 (MVP de descarga).** Ya se puede pegar un enlace, ver su información y
-> descargarlo con progreso en varios formatos. La cola, el modo avanzado y el editor llegan en
-> las fases siguientes.
+> **Estado: Fase 2 (Cola).** Se pegan enlaces, se ve su información y se descargan con
+> progreso en varios formatos, en una cola persistente con descargas simultáneas, pausa,
+> reanudación, reintentos y errores explicados en español. El modo avanzado y el editor llegan
+> en las fases siguientes.
 
 ## Probarlo en Windows (desarrollo)
 
@@ -27,6 +28,13 @@ Qué comprobar:
 3. En **Ajustes → Dependencias** aparece la versión de `yt-dlp`, `ffmpeg` y `ffprobe` si están en
    el PATH o en la carpeta de binarios ("Abrir carpeta de binarios" y copia ahí los `.exe`).
 4. "Abrir carpeta de logs" abre `%LOCALAPPDATA%\DescargadorBombastic\logs`.
+5. En **Descargas**, pega dos o tres enlaces y pulsa "Descargar todo": pasan a la **Cola**
+   (`Ctrl+2`), donde se ven progreso, velocidad y tiempo restante.
+6. En la Cola, pausa una descarga y reanúdala (aprovecha lo ya bajado); usa "Más" para subirla,
+   bajarla, copiar el enlace o ver el log y el comando.
+7. Cierra la app con una descarga en marcha y vuelve a abrirla: la cola sigue ahí, en pausa.
+8. En **Ajustes → Descargas** cambia las descargas simultáneas (1–8), los reintentos automáticos
+   ante errores de red y el límite de velocidad (por ejemplo `2M`).
 
 ### Modo portable
 
@@ -74,7 +82,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 |---|---|---|
 | 0 | Esqueleto | Hecha |
 | 1 | MVP de descarga | Hecha |
-| 2 | Cola | Pendiente |
+| 2 | Cola | Hecha |
 | 3 | Modo avanzado de yt-dlp | Pendiente |
 | 4 | Editor básico | Pendiente |
 | 5 | Editor completo | Pendiente |

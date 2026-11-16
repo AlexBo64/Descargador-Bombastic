@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from bombastic import APP_ID, APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core import i18n
+from bombastic.core.db import Database
 from bombastic.core.logging_setup import install_excepthook, setup_logging
 from bombastic.core.paths import resolve_paths, resources_dir
 from bombastic.core.settings import SettingsStore
@@ -70,13 +71,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     theme = ThemeManager(app)
     theme.apply(settings.theme)
 
-    ctx = AppContext(paths, settings, store, translator, theme)
+    db = Database(paths.db_path)
+    ctx = AppContext(paths, settings, store, translator, theme, db)
     window = MainWindow(ctx)
     window.show()
     # Tras mostrar la ventana, para que el arranque no espere a los ejecutables externos.
     QTimer.singleShot(0, window.settings_page.refresh_dependencies)
 
-    return app.exec()
+    code = app.exec()
+    db.close()
+    return code
 
 
 if __name__ == "__main__":

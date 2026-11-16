@@ -53,8 +53,6 @@ class DownloadItem:
     position: float = 0.0
     #: Reintentos automáticos hechos en la descarga actual.
     attempts: int = 0
-    #: Elementos elegidos de una lista (``--playlist-items``); vacío = todos.
-    playlist_items: str = ""
     #: Últimas líneas de la salida de yt-dlp de la última descarga.
     log: list[str] = field(default_factory=list)
     created_at: str = ""

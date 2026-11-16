@@ -16,11 +16,11 @@ def kill_process_tree(process: QProcess) -> None:
         return
     pid = process.processId()
     if pid and kill_tree(pid):
-
-        def fallback() -> None:
-            if process.state() != QProcess.ProcessState.NotRunning:
-                process.kill()
-
-        QTimer.singleShot(_FALLBACK_MS, process, fallback)
+        # Temporizador hijo del proceso: si el proceso se borra antes, el temporizador muere
+        # con él (un singleShot con función de Python podía dispararse sobre un objeto borrado).
+        timer = QTimer(process)
+        timer.setSingleShot(True)
+        timer.timeout.connect(process.kill)
+        timer.start(_FALLBACK_MS)
         return
     process.kill()

@@ -23,11 +23,12 @@ from bombastic.core.i18n import tr
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.pages import Page, PlaceholderPage
+from bombastic.ui.queue_page import QueuePage
 from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
-_PLACEHOLDER_PHASES = {"queue": 2, "editor": 4, "history": 7, "library": 6}
+_PLACEHOLDER_PHASES = {"editor": 4, "history": 7, "library": 6}
 
 
 class MainWindow(QMainWindow):
@@ -60,8 +61,14 @@ class MainWindow(QMainWindow):
         # --- Páginas ---
         self.stack = QStackedWidget()
         self.downloads_page = DownloadsPage(ctx)
+        self.queue_page = QueuePage(self.downloads_page.manager, self.downloads_page.thumbnails)
         self.settings_page = SettingsPage(ctx)
-        ready: dict[str, Page] = {"downloads": self.downloads_page, "settings": self.settings_page}
+        self.settings_page.queue_settings_changed.connect(self.downloads_page.apply_queue_settings)
+        ready: dict[str, Page] = {
+            "downloads": self.downloads_page,
+            "queue": self.queue_page,
+            "settings": self.settings_page,
+        }
         self.pages: dict[str, Page] = {}
         for key in PAGES:
             page = ready[key] if key in ready else PlaceholderPage(key, _PLACEHOLDER_PHASES[key])
@@ -90,6 +97,8 @@ class MainWindow(QMainWindow):
         self.retranslate()
         self._refresh_icons()
         self._restore_state()
+        # Con las páginas ya conectadas, para que la cola guardada aparezca en ellas.
+        self.downloads_page.manager.restore()
 
     # ------------------------------------------------------------- navegación
 

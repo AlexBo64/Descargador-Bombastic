@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 from bombastic.core.ytdlp_progress import DOWNLOAD_TEMPLATE, FILE_TEMPLATE, POSTPROCESS_TEMPLATE
 
@@ -50,6 +51,36 @@ class DownloadOptions:
     playlist: bool = False
     #: Carpeta donde están ffmpeg y ffprobe, si no están en el PATH.
     ffmpeg_dir: Path | None = None
+    #: Límite de velocidad de ``--limit-rate`` (por ejemplo ``2M``); vacío = sin límite.
+    rate_limit: str = ""
+
+
+def options_to_dict(options: DownloadOptions) -> dict[str, Any]:
+    """Para guardarlas en la base de datos (rutas como texto)."""
+    data = asdict(options)
+    for key, value in data.items():
+        if isinstance(value, Path):
+            data[key] = str(value)
+    return data
+
+
+def options_from_dict(data: Any) -> DownloadOptions | None:
+    """Inverso de :func:`options_to_dict`. Ignora campos desconocidos o de tipo incorrecto."""
+    if not isinstance(data, dict) or not isinstance(data.get("output_dir"), str):
+        return None
+    defaults = DownloadOptions(Path(data["output_dir"]))
+    values: dict[str, Any] = {}
+    for field in fields(DownloadOptions):
+        if field.name not in data or field.name == "output_dir":
+            continue
+        raw, default = data[field.name], getattr(defaults, field.name)
+        if field.name == "ffmpeg_dir":
+            values[field.name] = Path(raw) if isinstance(raw, str) else None
+        elif isinstance(default, Preset):
+            values[field.name] = Preset(raw) if raw in {p.value for p in Preset} else default
+        elif type(raw) is type(default):
+            values[field.name] = raw
+    return DownloadOptions(defaults.output_dir, **values)
 
 
 def is_audio(preset: Preset) -> bool:
@@ -99,6 +130,8 @@ def build_download_args(url: str, options: DownloadOptions) -> list[str]:
     ]
     if options.ffmpeg_dir is not None:
         args += ["--ffmpeg-location", str(options.ffmpeg_dir)]
+    if options.rate_limit:
+        args += ["--limit-rate", options.rate_limit]
     args += _format_args(options)
     if options.embed_subs and not is_audio(options.preset):
         args += ["--embed-subs", "--sub-langs", "all,-live_chat"]

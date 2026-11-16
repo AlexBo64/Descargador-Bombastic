@@ -5,23 +5,34 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QRect, QSize, Qt, Signal
-from PySide6.QtGui import QPixmap, QResizeEvent
+from PySide6.QtGui import QAction, QPixmap, QResizeEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QProgressBar,
     QPushButton,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
-from bombastic.core.download_manager import ACTIVE, DownloadItem, ItemState
+from bombastic.core.download_manager import (
+    ACTIVE,
+    CANCELLABLE,
+    PAUSABLE,
+    QUEUE_STATES,
+    DownloadItem,
+    ItemState,
+)
 from bombastic.core.formatting import format_bytes, format_duration, format_speed
 from bombastic.core.i18n import tr
 
 THUMBNAIL_SIZE = QSize(160, 90)
+#: Acciones del menú "Más" de las tarjetas de la cola, en orden.
+MENU_ACTIONS: tuple[str, ...] = ("up", "down", "open_file", "copy_url", "log", "command")
 _BAR_STEPS = 1000
 
 
@@ -139,6 +150,10 @@ class DownloadCard(QFrame):
     cancel_requested = Signal(int)
     remove_requested = Signal(int)
     open_folder_requested = Signal(int)
+    #: Pausar o reanudar, según el estado.
+    pause_toggled = Signal(int)
+    #: ``(id, acción)`` con una acción de :data:`MENU_ACTIONS`.
+    menu_requested = Signal(int, str)
 
     def __init__(self, item: DownloadItem, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -164,16 +179,30 @@ class DownloadCard(QFrame):
 
         self.download_button = QPushButton()
         self.download_button.setProperty("primary", True)
+        self.pause_button = QPushButton()
         self.cancel_button = QPushButton()
         self.open_button = QPushButton()
         self.remove_button = QPushButton()
+        self.more_button = QToolButton()
+        self.more_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.more_menu = QMenu(self.more_button)
+        self._menu_actions: dict[str, QAction] = {}
+        for key in MENU_ACTIONS:
+            action = self.more_menu.addAction("")
+            action.triggered.connect(
+                lambda _=False, k=key: self.menu_requested.emit(self.item_id, k)
+            )
+            self._menu_actions[key] = action
+        self.more_button.setMenu(self.more_menu)
         buttons = QHBoxLayout()
         buttons.setSpacing(8)
         for button in (
             self.download_button,
+            self.pause_button,
             self.cancel_button,
             self.open_button,
             self.remove_button,
+            self.more_button,
         ):
             buttons.addWidget(button)
         buttons.addStretch(1)
@@ -195,6 +224,7 @@ class DownloadCard(QFrame):
         layout.addLayout(column, 1)
 
         self.download_button.clicked.connect(self._on_primary)
+        self.pause_button.clicked.connect(lambda: self.pause_toggled.emit(self.item_id))
         self.cancel_button.clicked.connect(lambda: self.cancel_requested.emit(self.item_id))
         self.open_button.clicked.connect(lambda: self.open_folder_requested.emit(self.item_id))
         self.remove_button.clicked.connect(lambda: self.remove_requested.emit(self.item_id))
@@ -259,17 +289,30 @@ class DownloadCard(QFrame):
             self.status_label.style().polish(self.status_label)
 
         busy = state in ACTIVE or state in (ItemState.QUEUED, ItemState.FETCHING)
+        paused = state is ItemState.PAUSED
         self.progress_bar.setVisible(busy)
         fraction = item.snapshot.fraction if item.snapshot is not None else None
         if state is ItemState.DOWNLOADING and fraction is not None:
             self.progress_bar.setRange(0, _BAR_STEPS)
             self.progress_bar.setValue(round(fraction * _BAR_STEPS))
-        elif state is ItemState.QUEUED:
+        elif state is ItemState.QUEUED or paused:
             self.progress_bar.setRange(0, _BAR_STEPS)
-            self.progress_bar.setValue(0)
+            self.progress_bar.setValue(round((fraction or 0) * _BAR_STEPS) if paused else 0)
         else:
             # Sin dato de avance (o procesando): barra animada.
             self.progress_bar.setRange(0, 0)
+
+        self.pause_button.setText(
+            tr("downloads.card.resume" if state is ItemState.PAUSED else "downloads.card.pause")
+        )
+        self.pause_button.setVisible(state in PAUSABLE or state is ItemState.PAUSED)
+        self.more_button.setText(tr("downloads.card.more"))
+        self.more_button.setVisible(state in QUEUE_STATES)
+        for key, action in self._menu_actions.items():
+            action.setText(tr(f"downloads.menu.{key}"))
+        self._menu_actions["open_file"].setEnabled(bool(item.files))
+        self._menu_actions["log"].setEnabled(bool(item.log))
+        self._menu_actions["command"].setEnabled(bool(item.command))
 
         retry = state in (ItemState.FAILED, ItemState.CANCELLED, ItemState.INFO_ERROR)
         self.download_button.setText(
@@ -277,8 +320,9 @@ class DownloadCard(QFrame):
         )
         self.download_button.setVisible(state is ItemState.READY or retry)
         self.cancel_button.setText(tr("downloads.card.cancel"))
-        self.cancel_button.setVisible(state in ACTIVE or state is ItemState.QUEUED)
+        self.cancel_button.setVisible(state in CANCELLABLE)
         self.open_button.setText(tr("downloads.card.open_folder"))
         self.open_button.setVisible(state is ItemState.COMPLETED)
         self.remove_button.setText(tr("downloads.card.remove"))
         self.remove_button.setVisible(state not in ACTIVE and state is not ItemState.QUEUED)
+        self.progress_bar.setVisible(busy or state is ItemState.PAUSED)

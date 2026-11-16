@@ -38,6 +38,24 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 | `core/thumbnails.py` | Descarga y caché de miniaturas con QtNetwork |
 | `platform_win/process.py` | `taskkill /T /F` para matar el árbol de procesos |
 
+## Cola (Fase 2)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/download_models.py` | `DownloadItem` y los estados (`STAGING` en Descargas, `QUEUE_STATES` en la Cola) |
+| `core/download_manager.py` | Metadatos, cola ordenada por `position`, simultáneas, pausa, reintentos y guardado |
+| `core/db.py` | Conexión SQLite con migraciones por `PRAGMA user_version` |
+| `core/errors.py` | Patrones de la salida de yt-dlp → clave de mensaje legible (y si se reintenta) |
+| `ui/queue_page.py` | Página Cola, acciones en lote y menú "Más" |
+
+- Los enlaces recién añadidos no se guardan; solo lo que se ha mandado a la cola.
+- Al abrir la app, lo que estaba en marcha o esperando se restaura **en pausa**: no se lanzan
+  descargas sin que el usuario lo pida.
+- Pausar = matar el árbol de procesos; yt-dlp reanuda desde los `.part` al relanzarlo.
+- Los reintentos automáticos solo se hacen ante errores marcados como pasajeros (red, 429).
+- Un `QProcess` nunca se borra con el proceso vivo (Qt aborta más tarde): las consultas
+  canceladas se borran al recibir la señal de fin y al cerrar la app se espera a que mueran.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

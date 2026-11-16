@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool, locate
-from bombastic.core.download_manager import DownloadManager, ItemState
+from bombastic.core.download_manager import STAGING, DownloadManager, ItemState
 from bombastic.core.i18n import tr
 from bombastic.core.thumbnails import ThumbnailLoader
 from bombastic.core.urls import extract_urls
@@ -39,7 +39,8 @@ from bombastic.core.ytdlp_runner import Launcher, default_launcher
 from bombastic.ui.download_card import DownloadCard, output_folder
 from bombastic.ui.pages import Page
 
-_FINISHED = (ItemState.COMPLETED, ItemState.FAILED, ItemState.CANCELLED, ItemState.INFO_ERROR)
+#: Rápido para descargas pequeñas, sin saturar si fallan muchas por la red.
+_RETRY_DELAY_MS = 5000
 
 
 class DownloadsPage(Page):
@@ -51,7 +52,9 @@ class DownloadsPage(Page):
     ) -> None:
         super().__init__("downloads", parent)
         self._ctx = ctx
-        self.manager = DownloadManager(launcher or default_launcher(ctx.paths), self)
+        self.manager = DownloadManager(launcher or default_launcher(ctx.paths), self, db=ctx.db)
+        self.manager.retry_delay_ms = _RETRY_DELAY_MS
+        self.apply_queue_settings()
         self.thumbnails = ThumbnailLoader(ctx.paths.thumbnails_dir, self)
         self.cards: dict[int, DownloadCard] = {}
         #: Clave del aviso que se muestra bajo el campo de enlaces (vacía si no hay ninguno).
@@ -337,9 +340,17 @@ class DownloadsPage(Page):
                 self.manager.start(item.item_id, options)
 
     def clear_finished(self) -> None:
+        """Quita los enlaces cuya información no se ha podido obtener."""
         for item in self.manager.items():
-            if item.state in _FINISHED:
+            if item.state is ItemState.INFO_ERROR:
                 self.manager.remove(item.item_id)
+
+    def apply_queue_settings(self) -> None:
+        """Aplica al gestor los ajustes de la cola (simultáneas, reintentos y velocidad)."""
+        settings = self._ctx.settings
+        self.manager.max_concurrent = settings.max_concurrent
+        self.manager.max_retries = settings.auto_retries
+        self.manager.rate_limit = settings.rate_limit
 
     def shutdown(self) -> None:
         self.manager.shutdown()
@@ -351,7 +362,7 @@ class DownloadsPage(Page):
 
     def _on_item_added(self, item_id: int) -> None:
         item = self.manager.item(item_id)
-        if item is None:
+        if item is None or item.state not in STAGING:
             return
         card = DownloadCard(item)
         card.download_requested.connect(self._start)
@@ -368,6 +379,11 @@ class DownloadsPage(Page):
         card = self.cards.get(item_id)
         item = self.manager.item(item_id)
         if card is None or item is None:
+            return
+        if item.state not in STAGING:
+            # Ha pasado a la cola: su tarjeta ya se ve en la página Cola.
+            self._on_item_removed(item_id)
+            self._set_feedback("downloads.sent_to_queue")
             return
         card.refresh()
         if item.info is not None and item.info.thumbnail_url and not card.has_thumbnail():
@@ -396,9 +412,9 @@ class DownloadsPage(Page):
         self._open_folder(folder if folder is not None else Path(self._ctx.download_dir()))
 
     def _refresh_actions(self) -> None:
-        items = self.manager.items()
+        items = [item for item in self.manager.items() if item.state in STAGING]
         self.empty_label.setVisible(not items)
         self.download_all_button.setEnabled(any(i.state is ItemState.READY for i in items))
-        self.clear_button.setEnabled(any(i.state in _FINISHED for i in items))
+        self.clear_button.setEnabled(any(i.state is ItemState.INFO_ERROR for i in items))
         self.clear_button.setVisible(bool(items))
         self.download_all_button.setVisible(bool(items))

@@ -130,11 +130,28 @@ class InfoFetcher(QObject):
         self._timer.start()
         self._process.start(*self._launch)
 
+    def wait(self, msecs: int) -> None:
+        """Espera a que el proceso termine (solo al cerrar la app, tras ``cancel``)."""
+        if self._process.state() != QProcess.ProcessState.NotRunning:
+            self._process.waitForFinished(msecs)
+
     def cancel(self) -> None:
         """Abandona la consulta sin emitir ninguna señal."""
         self._done = True
         self._timer.stop()
         kill_process_tree(self._process)
+
+    def dispose(self) -> None:
+        """Cancela y se borra cuando el proceso haya muerto.
+
+        Borrar un ``QProcess`` con el proceso vivo (``taskkill`` es asíncrono) hace que Qt
+        aborte más tarde, así que el borrado espera a la señal de fin.
+        """
+        self.cancel()
+        if self._process.state() == QProcess.ProcessState.NotRunning:
+            self.deleteLater()
+        else:
+            self._process.finished.connect(self.deleteLater)
 
     def _read_stdout(self) -> None:
         self._stdout += bytes(self._process.readAllStandardOutput().data())
@@ -227,6 +244,11 @@ class DownloadJob(QObject):
     def start(self) -> None:
         log.info("Starting download: %s", self.command)
         self._process.start(*self._launch)
+
+    def wait(self, msecs: int) -> None:
+        """Espera a que el proceso termine (solo al cerrar la app, tras ``cancel``)."""
+        if self.running:
+            self._process.waitForFinished(msecs)
 
     def cancel(self) -> None:
         """Detiene la descarga. ``finished`` se emite con estado ``cancelled``.

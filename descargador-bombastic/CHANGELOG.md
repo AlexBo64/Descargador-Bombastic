@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 — Fase 2: Cola
+
+- Página **Cola**: lo que se manda a descargar pasa de Descargas a la Cola, con estado, barra de
+  progreso, velocidad, tamaño y tiempo restante.
+- Cola persistente en SQLite (`PRAGMA user_version` para migrar): al cerrar la app lo que estaba
+  en marcha o esperando queda en pausa y se recupera al abrir.
+- Descargas simultáneas configurables (1–8, por defecto 3).
+- Pausar (mata yt-dlp y conserva los `.part`), reanudar, cancelar, reintentar, quitar, subir y
+  bajar; en lote: pausar todo, reanudar todo, reintentar fallidas y quitar terminadas.
+- Menú "Más" por descarga: abrir archivo, copiar enlace, ver log y ver comando.
+- Reintentos automáticos ante errores de red (configurables, por defecto 2) y límite global de
+  velocidad (`--limit-rate`).
+- Errores de yt-dlp traducidos a mensajes legibles ("Este vídeo es privado", "Necesitas iniciar
+  sesión: prueba a activar las cookies", "yt-dlp está desactualizado: actualízalo"…); el mensaje
+  original queda en el log.
+- Corregido: quitar un enlace mientras se obtenía su información borraba el proceso aún vivo y
+  Qt podía cerrar la app de golpe más tarde.
+
 ## 0.2.0 — Fase 1: MVP de descarga
 
 - Página de Descargas: pegar uno o varios enlaces (Ctrl+Intro), con o sin `https://`.
