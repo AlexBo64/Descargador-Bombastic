@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "descargador-bombastic"
+version = "0.1.0"
+description = "Interfaz gráfica para yt-dlp y ffmpeg en Windows"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["PySide6>=6.7"]
+
+[project.gui-scripts]
+descargador-bombastic = "bombastic.app:main"
+
+[tool.setuptools.packages.find]
+include = ["bombastic*"]
+
+[tool.setuptools.package-data]
+bombastic = ["resources/**/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "RUF"]
+# N802: Qt obliga a nombres camelCase al sobrescribir métodos (closeEvent, etc.).
+ignore = ["N802"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+files = ["bombastic"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+pythonpath = ["."]
+markers = [
+    "integration: tests que necesitan red y binarios reales (desactivados por defecto)",
+]
+addopts = "-m 'not integration'"

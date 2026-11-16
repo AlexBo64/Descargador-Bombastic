@@ -1,0 +1,22 @@
+"""Objetos compartidos por toda la aplicación."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from bombastic.core.i18n import Translator
+from bombastic.core.paths import AppPaths
+from bombastic.core.settings import Settings, SettingsStore
+from bombastic.ui.theme import ThemeManager
+
+
+@dataclass
+class AppContext:
+    paths: AppPaths
+    settings: Settings
+    store: SettingsStore
+    translator: Translator
+    theme: ThemeManager
+
+    def save_settings(self) -> None:
+        self.store.save(self.settings)

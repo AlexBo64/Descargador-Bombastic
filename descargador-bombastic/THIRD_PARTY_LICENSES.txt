@@ -1,0 +1,27 @@
+Descargador Bombastic usa los siguientes componentes de terceros.
+
+Estado en la Fase 0: la aplicación todavía no distribuye ningún binario. Este archivo se
+completará en las fases 8 y 10 con la versión exacta, la URL de descarga y el SHA-256 de cada
+ejecutable incluido en el instalador.
+
+------------------------------------------------------------------------------
+PySide6 (Qt for Python) y Qt 6
+  Licencia: LGPL-3.0 (también disponible bajo GPL y licencia comercial)
+  Origen:   https://pypi.org/project/PySide6/  (versión fijada en requirements.txt)
+  Texto:    https://www.gnu.org/licenses/lgpl-3.0.html
+  Nota:     se distribuye como bibliotecas dinámicas separadas (PyInstaller --onedir), de modo
+            que el usuario puede sustituirlas, como exige la LGPL.
+
+------------------------------------------------------------------------------
+yt-dlp (ejecutable externo, no enlazado)
+  Licencia: The Unlicense. Los ejecutables oficiales incluyen además componentes de terceros
+            con sus propias licencias (ver THIRD_PARTY_LICENSES en su repositorio).
+  Origen:   https://github.com/yt-dlp/yt-dlp/releases
+
+------------------------------------------------------------------------------
+FFmpeg: ffmpeg y ffprobe (ejecutables externos, no enlazados)
+  Licencia: GPL-3.0 o LGPL según la build. Las builds "essentials" de gyan.dev y las builds
+            "gpl" de BtbN son GPL-3.0.
+  Origen:   https://www.gyan.dev/ffmpeg/builds/  o  https://github.com/BtbN/FFmpeg-Builds
+  Fuentes:  https://ffmpeg.org/download.html
+  Texto:    https://www.gnu.org/licenses/gpl-3.0.html

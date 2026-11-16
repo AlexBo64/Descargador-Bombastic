@@ -1,0 +1,169 @@
+/* Hoja de estilos única. Los marcadores entre llaves dobles se sustituyen por los colores
+   del tema activo (ver bombastic/ui/theme.py). */
+
+* {
+    font-family: "Segoe UI", "Inter", "Noto Sans", sans-serif;
+    font-size: 10pt;
+}
+
+QWidget {
+    color: {{text}};
+}
+
+QMainWindow, QWidget#Central, QStackedWidget {
+    background: {{bg}};
+}
+
+/* ---- Barra lateral ---- */
+QFrame#Sidebar {
+    background: {{sidebar}};
+    border: none;
+    border-right: 1px solid {{border}};
+}
+
+QLabel#AppTitle {
+    font-size: 12pt;
+    font-weight: 600;
+    padding: 20px 18px 12px 18px;
+}
+
+QLabel#AppVersion {
+    color: {{muted}};
+    font-size: 8pt;
+    padding: 12px 18px;
+}
+
+QListWidget#Nav {
+    background: transparent;
+    border: none;
+    outline: 0;
+    padding: 4px 10px;
+}
+
+QListWidget#Nav::item {
+    padding: 9px 10px;
+    margin: 2px 0;
+    border-radius: 8px;
+    color: {{text}};
+}
+
+QListWidget#Nav::item:hover {
+    background: {{hover}};
+}
+
+QListWidget#Nav::item:selected {
+    background: {{accent_soft}};
+    color: {{accent_text}};
+}
+
+/* ---- Páginas ---- */
+QLabel#PageTitle {
+    font-size: 18pt;
+    font-weight: 600;
+}
+
+QLabel#PageSubtitle, QLabel[muted="true"] {
+    color: {{muted}};
+}
+
+QLabel#Placeholder {
+    color: {{muted}};
+    background: {{surface}};
+    border: 1px dashed {{border}};
+    border-radius: 10px;
+    padding: 28px;
+}
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
+QGroupBox {
+    background: {{surface}};
+    border: 1px solid {{border}};
+    border-radius: 10px;
+    margin-top: 22px;
+    padding: 14px 14px 12px 14px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 4px;
+    padding: 0 2px;
+    color: {{muted}};
+}
+
+/* ---- Controles ---- */
+QPushButton {
+    background: {{surface_alt}};
+    border: 1px solid {{border}};
+    border-radius: 7px;
+    padding: 6px 14px;
+}
+
+QPushButton:hover {
+    background: {{hover}};
+}
+
+QPushButton:pressed {
+    background: {{accent_soft}};
+}
+
+QPushButton:disabled {
+    color: {{muted}};
+}
+
+QLineEdit, QComboBox {
+    background: {{input}};
+    border: 1px solid {{border}};
+    border-radius: 7px;
+    padding: 5px 8px;
+    selection-background-color: {{accent}};
+    selection-color: #ffffff;
+}
+
+QPushButton:focus, QLineEdit:focus, QComboBox:focus {
+    border-color: {{accent}};
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 22px;
+}
+
+QComboBox QAbstractItemView {
+    background: {{surface}};
+    border: 1px solid {{border}};
+    outline: 0;
+    selection-background-color: {{accent_soft}};
+    selection-color: {{accent_text}};
+}
+
+QToolTip {
+    background: {{surface}};
+    color: {{text}};
+    border: 1px solid {{border}};
+    padding: 4px 6px;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: {{border}};
+    border-radius: 4px;
+    min-height: 28px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}

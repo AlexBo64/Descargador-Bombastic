@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+out/
+dist/
+*.egg-info/
+# Datos de la versión portable durante el desarrollo
+/data/
+/portable.flag
+/bin/
