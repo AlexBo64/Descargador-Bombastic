@@ -2,7 +2,7 @@
 
 ## 1.2.1 — Subtítulos en la vista previa
 
-- El reproductor del Editor y de la Biblioteca muestra los subtítulos incrustados: activa la
+- El reproductor del Editor muestra los subtítulos incrustados: activa la
   primera pista al abrir el archivo y, si hay alguna, aparece un selector para cambiarla o
   quitarla. Antes la pista estaba en el archivo pero la vista previa no la enseñaba.
 - La barra de volumen del reproductor tiene su etiqueta "Volumen" y muestra el % al pasar
