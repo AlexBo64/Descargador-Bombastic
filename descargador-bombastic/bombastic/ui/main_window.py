@@ -19,16 +19,20 @@ from PySide6.QtWidgets import (
 
 from bombastic import APP_NAME, __version__
 from bombastic.context import AppContext
+from bombastic.core.binaries import Tool
+from bombastic.core.edit_manager import EditManager
 from bombastic.core.i18n import tr
+from bombastic.core.media_prober import tool_launcher
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
 from bombastic.ui.downloads_page import DownloadsPage
+from bombastic.ui.editor_page import EditorPage
 from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.queue_page import QueuePage
 from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
-_PLACEHOLDER_PHASES = {"editor": 4, "history": 7, "library": 6}
+_PLACEHOLDER_PHASES = {"history": 7, "library": 6}
 
 
 class MainWindow(QMainWindow):
@@ -61,12 +65,22 @@ class MainWindow(QMainWindow):
         # --- Páginas ---
         self.stack = QStackedWidget()
         self.downloads_page = DownloadsPage(ctx)
-        self.queue_page = QueuePage(self.downloads_page.manager, self.downloads_page.thumbnails)
+        self.edit_manager = EditManager(
+            tool_launcher(ctx.paths, Tool.FFMPEG),
+            self,
+            db=ctx.db,
+            max_concurrent=ctx.settings.max_concurrent_edits,
+        )
+        self.editor_page = EditorPage(ctx, self.edit_manager)
+        self.queue_page = QueuePage(
+            self.downloads_page.manager, self.downloads_page.thumbnails, self.edit_manager
+        )
         self.settings_page = SettingsPage(ctx)
-        self.settings_page.queue_settings_changed.connect(self.downloads_page.apply_queue_settings)
+        self.settings_page.queue_settings_changed.connect(self._apply_queue_settings)
         ready: dict[str, Page] = {
             "downloads": self.downloads_page,
             "queue": self.queue_page,
+            "editor": self.editor_page,
             "settings": self.settings_page,
         }
         self.pages: dict[str, Page] = {}
@@ -99,6 +113,7 @@ class MainWindow(QMainWindow):
         self._restore_state()
         # Con las páginas ya conectadas, para que la cola guardada aparezca en ellas.
         self.downloads_page.manager.restore()
+        self.edit_manager.restore()
 
     # ------------------------------------------------------------- navegación
 
@@ -142,10 +157,13 @@ class MainWindow(QMainWindow):
         self.show_page(settings.last_page)
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        if self.downloads_page.has_active_downloads() and not self._confirm_exit():
+        busy = self.downloads_page.has_active_downloads() or self.edit_manager.busy
+        if busy and not self._confirm_exit():
             event.ignore()
             return
         self.downloads_page.shutdown()
+        self.edit_manager.shutdown()
+        self.editor_page.shutdown()
         settings = self._ctx.settings
         settings.window_maximized = self.isMaximized()
         if not self.isMaximized():
@@ -154,6 +172,10 @@ class MainWindow(QMainWindow):
         self._ctx.save_settings()
         self._unsubscribe()
         super().closeEvent(event)
+
+    def _apply_queue_settings(self) -> None:
+        self.downloads_page.apply_queue_settings()
+        self.edit_manager.max_concurrent = self._ctx.settings.max_concurrent_edits
 
     def _confirm_exit(self) -> bool:
         """Pregunta antes de cerrar con una descarga a medias."""

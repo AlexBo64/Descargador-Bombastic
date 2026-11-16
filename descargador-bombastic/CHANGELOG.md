@@ -1,12 +1,35 @@
 # Changelog
 
+## 0.5.0 — Fase 4: Editor básico
+
+- Página **Editor**: abrir con el diálogo o arrastrando, panel de información con ffprobe
+  (contenedor, duración, tamaño, bitrate y cada pista con códec, resolución, fps, frecuencia,
+  canales e idioma).
+- Reproductor (QtMultimedia) con play/pausa, barra de tiempo, ±1 s y ±5 s, fotograma a
+  fotograma aproximado, velocidad y volumen; marcadores de inicio (I) y fin (O) dibujados sobre
+  la barra y que rellenan los tiempos de la herramienta activa (`hh:mm:ss.mmm`).
+- Herramientas: convertir (contenedor, H.264/H.265/VP9/AV1/ProRes/copiar, AAC/MP3/Opus/FLAC/
+  PCM/copiar, CRF o bitrate, preset; explica `-c copy` y avisa si se puede copiar), recortar
+  (rápido sin recodificar o preciso), varios fragmentos (conservar o eliminar tramos), unir
+  (demuxer concat si son compatibles, si no, filtro concat recodificando, detectado solo) y
+  comprimir (CRF o tamaño objetivo en MB con dos pasadas).
+- "Ver comando" en todas las herramientas.
+- Cola de edición persistente (pestaña **Cola → Ediciones**): progreso real con `out_time`
+  frente a la duración (también en dos pasadas), velocidad, pausar, cancelar, reintentar,
+  reordenar, abrir resultado y ver detalles. Simultáneas configurables (1 por defecto).
+- Seguridad: nunca se sobrescribe el original (`nombre_editado.ext`, `(1)`, `(2)`…), se
+  comprueba el espacio libre antes de empezar y se borra la salida a medias si se cancela o
+  falla.
+- Corregido: convertir a un contenedor solo de audio con "copiar" metía un códec que el
+  contenedor no admite.
+
 ## 0.4.0 — Fase 3: Modo avanzado de yt-dlp
 
 - Catálogo de opciones generado a partir de `yt-dlp --help` (`build/gen_ytdlp_options.py` →
   `resources/ytdlp_options.json`, 255 opciones de yt-dlp 2026.08.19) y regenerable desde
   Ajustes con el yt-dlp instalado. Si el parseo falla se usa el incluido.
 - Diálogo "Opciones avanzadas…": una pestaña por grupo de yt-dlp, casilla o campo (con
-  selector de archivo o carpeta) por opción, flag real y ayuda (traducida al español en 115
+  selector de archivo o carpeta) por opción, flag real y ayuda (traducida al español en 113
   opciones), buscador, opciones modificadas en negrita y restablecer por grupo o en total.
 - Argumentos libres con validación de comillas y vista previa del comando final.
 - Avisos de conflictos: extraer audio sin ffmpeg, `--merge-output-format` con audio, `-o`/`-P`

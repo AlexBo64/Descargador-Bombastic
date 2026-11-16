@@ -71,6 +71,25 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - Se ocultan las opciones que romperían la lectura de la salida (`--print`, `--quiet`,
   `--progress-template`…) y los alias de presets (`-t`).
 
+## Editor (Fase 4)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/media_probe.py` | Parser de `ffprobe -show_format -show_streams -of json` |
+| `core/media_prober.py` | ffprobe con `QProcess` y `tool_launcher` para ffmpeg/ffprobe |
+| `core/ffmpeg_command.py` | Herramientas → `EditPlan` (una o varias pasadas de argumentos) |
+| `core/ffmpeg_progress.py` | Parser de `-progress pipe:1` |
+| `core/output_paths.py` | Nombres de salida que nunca pisan nada y espacio libre |
+| `core/edit_manager.py` | `FfmpegJob` (pasadas en serie) y cola de edición persistente |
+| `ui/player.py` | Reproductor y barra con marcadores I/O |
+| `ui/editor_tools.py` | Formularios de las herramientas |
+| `ui/editor_page.py`, `ui/edit_queue.py` | Página del editor y pestaña Ediciones de la Cola |
+
+- Una edición no se reanuda a medias: pausar o cancelar borra la salida y al reanudar empieza
+  de nuevo (ffmpeg no tiene un equivalente a los `.part` de yt-dlp).
+- Las listas del demuxer concat y los logs de dos pasadas van a `cache\tmp` y se borran al
+  terminar.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

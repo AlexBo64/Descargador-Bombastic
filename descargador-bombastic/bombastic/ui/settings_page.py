@@ -82,6 +82,10 @@ class SettingsPage(Page):
         self.retries_spin = QSpinBox()
         self.retries_spin.setRange(0, 10)
         self.retries_spin.setValue(settings.auto_retries)
+        self.edits_label = QLabel()
+        self.edits_spin = QSpinBox()
+        self.edits_spin.setRange(1, 4)
+        self.edits_spin.setValue(settings.max_concurrent_edits)
         self.rate_label = QLabel()
         self.rate_edit = QLineEdit(settings.rate_limit)
         self.rate_edit.setMaxLength(12)
@@ -89,6 +93,7 @@ class SettingsPage(Page):
             (self.concurrent_label, self.concurrent_spin),
             (self.retries_label, self.retries_spin),
             (self.rate_label, self.rate_edit),
+            (self.edits_label, self.edits_spin),
         ):
             label.setBuddy(widget)
             form.addRow(label, widget)
@@ -171,6 +176,7 @@ class SettingsPage(Page):
         self.browse_button.clicked.connect(self._browse_download_dir)
         self.concurrent_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.retries_spin.valueChanged.connect(self._on_queue_settings_changed)
+        self.edits_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
         self.catalog_button.clicked.connect(self.refresh_catalog)
@@ -198,6 +204,7 @@ class SettingsPage(Page):
         self.retries_label.setText(tr("settings.auto_retries"))
         self.retries_spin.setToolTip(tr("settings.auto_retries.tooltip"))
         self.rate_label.setText(tr("settings.rate_limit"))
+        self.edits_label.setText(tr("settings.max_concurrent_edits"))
         self.rate_edit.setPlaceholderText(tr("settings.rate_limit.placeholder"))
         self.rate_edit.setToolTip(tr("settings.rate_limit.tooltip"))
 
@@ -267,6 +274,7 @@ class SettingsPage(Page):
             rate = settings.rate_limit
         settings.max_concurrent = self.concurrent_spin.value()
         settings.auto_retries = self.retries_spin.value()
+        settings.max_concurrent_edits = self.edits_spin.value()
         settings.rate_limit = rate
         self._ctx.save_settings()
         self.queue_settings_changed.emit()

@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 3 (Modo avanzado de yt-dlp).** Además de lo anterior, todas las opciones
+> **Estado: Fase 4 (Editor básico).** Editor con reproductor, marcadores I/O y las
+> herramientas convertir, recortar, varios tramos, unir y comprimir, con cola de edición.
+>
+> **Fase 3 (Modo avanzado de yt-dlp):** Además de lo anterior, todas las opciones
 > de yt-dlp, cookies, argumentos libres y selector manual de formatos.
 >
 > **Fase 2 (Cola):** Se pegan enlaces, se ve su información y se descargan con
@@ -45,6 +48,12 @@ Qué comprobar:
     se descargará con ese `-f`.
 11. **Ajustes → Dependencias → Actualizar opciones de yt-dlp** relee la lista de opciones del
     yt-dlp instalado (para opciones nuevas tras actualizarlo).
+12. En **Editor** (`Ctrl+3`) abre o arrastra un vídeo: se ve su información (ffprobe) y se
+    reproduce. `Espacio` reproduce/pausa, `I` y `O` marcan inicio y fin, las flechas saltan
+    ±1 s (±5 s con Mayús) y coma/punto avanzan fotograma a fotograma.
+13. Elige una herramienta (Convertir, Recortar, Fragmentos, Unir, Comprimir), pulsa "Ver
+    comando" para ver el ffmpeg exacto y "Añadir a la cola de edición". El progreso se ve en
+    **Cola → Ediciones**. El original nunca se sobrescribe: se crea `nombre_editado.ext`.
 
 ### Modo portable
 
@@ -94,7 +103,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 1 | MVP de descarga | Hecha |
 | 2 | Cola | Hecha |
 | 3 | Modo avanzado de yt-dlp | Hecha |
-| 4 | Editor básico | Pendiente |
+| 4 | Editor básico | Hecha |
 | 5 | Editor completo | Pendiente |
 | 6 | Modo experto y recetas | Pendiente |
 | 7 | Perfiles, historial y encadenado | Pendiente |

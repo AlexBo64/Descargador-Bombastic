@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QApplication
 from bombastic.context import AppContext
 from bombastic.core import i18n
 from bombastic.core.download_manager import DownloadManager
+from bombastic.core.edit_manager import EditManager
 from bombastic.core.paths import AppPaths, resources_dir
 from bombastic.core.settings import SettingsStore
 from bombastic.core.ytdlp_runner import Launch, Launcher
@@ -52,6 +53,17 @@ def fake_launcher() -> Launcher:
 
 
 @pytest.fixture
+def fake_ffmpeg() -> Launcher:
+    """Lanza ``tests/fake_ffmpeg.py`` (hace de ffmpeg y de ffprobe)."""
+    script = str(Path(__file__).with_name("fake_ffmpeg.py"))
+
+    def launch(args: list[str]) -> Launch | None:
+        return sys.executable, [script, *args]
+
+    return launch
+
+
+@pytest.fixture
 def ctx(qapp: QApplication, paths: AppPaths, translator: i18n.Translator) -> Iterator[AppContext]:
     store = SettingsStore(paths.settings_path)
     theme = ThemeManager(qapp)
@@ -62,20 +74,21 @@ def ctx(qapp: QApplication, paths: AppPaths, translator: i18n.Translator) -> Ite
 
 @pytest.fixture(autouse=True)
 def _dispose_managers(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Cierra y borra con Qt los gestores sin padre creados en cada test.
+    """Cierra y borra con Qt los gestores (descargas y ediciones) sin padre creados en cada test.
 
     Si se dejara que el recolector de Python los destruyera (en cualquier momento de un test
     posterior), Qt podría abortar. En la app el gestor cuelga de una página y vive toda la sesión.
     """
-    created: list[DownloadManager] = []
-    original = DownloadManager.__init__
+    created: list[DownloadManager | EditManager] = []
+    for cls in (DownloadManager, EditManager):
+        original = cls.__init__
 
-    def init(self: DownloadManager, *args: Any, **kwargs: Any) -> None:
-        original(self, *args, **kwargs)
-        if self.parent() is None:
-            created.append(self)
+        def init(self: Any, *args: Any, _original: Any = original, **kwargs: Any) -> None:
+            _original(self, *args, **kwargs)
+            if self.parent() is None:
+                created.append(self)
 
-    monkeypatch.setattr(DownloadManager, "__init__", init)
+        monkeypatch.setattr(cls, "__init__", init)
     yield
     for manager in created:
         manager.shutdown()

@@ -39,6 +39,21 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX downloads_position ON downloads(position);
     """,
+    # 2 — Fase 4: cola de edición.
+    """
+    CREATE TABLE edits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        position REAL NOT NULL,
+        state TEXT NOT NULL,
+        plan TEXT NOT NULL,
+        error_code TEXT NOT NULL DEFAULT '',
+        error_detail TEXT NOT NULL DEFAULT '',
+        log TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

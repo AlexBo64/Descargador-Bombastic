@@ -57,6 +57,8 @@ class Settings:
     #: Cola de descargas.
     max_concurrent: int = 3
     auto_retries: int = 2
+    #: Ediciones simultáneas (recodificar ya usa mucha CPU).
+    max_concurrent_edits: int = 1
     #: Límite global de velocidad para yt-dlp (``500K``, ``2M``…); vacío = sin límite.
     rate_limit: str = ""
     #: Modo avanzado: valor de cada opción de yt-dlp por su flag (``True`` o un texto).
@@ -92,6 +94,7 @@ class Settings:
             self.cookies_browser = defaults.cookies_browser
         self.max_concurrent = max(1, min(self.max_concurrent, 8))
         self.auto_retries = max(0, min(self.auto_retries, 10))
+        self.max_concurrent_edits = max(1, min(self.max_concurrent_edits, 4))
         if not is_valid_rate(self.rate_limit):
             self.rate_limit = defaults.rate_limit
         self.window_width = max(MIN_WINDOW_WIDTH, min(self.window_width, 10_000))

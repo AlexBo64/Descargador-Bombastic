@@ -10,14 +10,17 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from bombastic.core.download_manager import FINISHED, QUEUE_STATES, DownloadManager, ItemState
+from bombastic.core.edit_manager import EditManager
 from bombastic.core.i18n import tr
 from bombastic.core.thumbnails import ThumbnailLoader
 from bombastic.ui.download_card import DownloadCard, error_text, output_folder
+from bombastic.ui.edit_queue import EditQueueView
 from bombastic.ui.pages import Page
 
 
@@ -26,6 +29,7 @@ class QueuePage(Page):
         self,
         manager: DownloadManager,
         thumbnails: ThumbnailLoader,
+        edits: EditManager | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__("queue", parent)
@@ -64,8 +68,17 @@ class QueuePage(Page):
         self.cards_scroll.setWidgetResizable(True)
         self.cards_scroll.setWidget(host)
 
-        self.body.addLayout(actions)
-        self.body.addWidget(self.cards_scroll, 1)
+        downloads = QWidget()
+        column = QVBoxLayout(downloads)
+        column.setContentsMargins(0, 8, 0, 0)
+        column.addLayout(actions)
+        column.addWidget(self.cards_scroll, 1)
+        self.tabs = QTabWidget()
+        self.tabs.addTab(downloads, "")
+        self.edit_view = EditQueueView(edits) if edits is not None else None
+        if self.edit_view is not None:
+            self.tabs.addTab(self.edit_view, "")
+        self.body.addWidget(self.tabs, 1)
 
         self.pause_all_button.clicked.connect(manager.pause_all)
         self.resume_all_button.clicked.connect(manager.resume_all)
@@ -86,6 +99,10 @@ class QueuePage(Page):
         self.retry_failed_button.setText(tr("queue.retry_failed"))
         self.clear_button.setText(tr("queue.clear_finished"))
         self.empty_label.setText(tr("queue.empty"))
+        self.tabs.setTabText(0, tr("queue.tab.downloads"))
+        if self.edit_view is not None:
+            self.tabs.setTabText(1, tr("queue.tab.edits"))
+            self.edit_view.retranslate()
         for card in self.cards.values():
             card.retranslate()
         self._refresh_actions()
