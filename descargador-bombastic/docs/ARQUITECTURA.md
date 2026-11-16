@@ -131,6 +131,18 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - Un perfil es una copia de los ajustes de `PROFILE_FIELDS`; al importar se descartan claves
   desconocidas.
 
+## Actualizaciones (Fase 8)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/net.py` | `TextFetch` y `FileFetch` con QtNetwork (User-Agent genérico, sigue redirecciones) |
+| `core/updater.py` | Versiones, releases de GitHub, SHA-256, extracción, cambio con `.old` y vuelta atrás |
+| `ui/updates.py` | `Updates`, bloque de Ajustes, barra de aviso y asistente de dependencias |
+
+- Nada se instala sin comprobar su SHA-256 publicado; si la release no lo publica, no se
+  instala.
+- Los tests usan URLs `file://` que imitan la API de GitHub: no hay red en los tests.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

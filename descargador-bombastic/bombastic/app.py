@@ -77,6 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     window.show()
     # Tras mostrar la ventana, para que el arranque no espere a los ejecutables externos.
     QTimer.singleShot(0, window.settings_page.refresh_dependencies)
+    QTimer.singleShot(1500, window.startup_checks)
 
     code = app.exec()
     db.close()

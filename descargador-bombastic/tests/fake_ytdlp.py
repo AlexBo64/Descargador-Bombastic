@@ -12,7 +12,8 @@ palabras que aparezcan en el enlace:
 - ``slowinfo``: la consulta de metadatos no termina nunca.
 - ``slow``: la descarga no termina nunca (para probar cancelaciones).
 
-``--version`` y ``--help`` devuelven una versión inventada y la ayuda de ``fixtures/``.
+``--version`` y ``--help`` devuelven una versión inventada y la ayuda de ``fixtures/``;
+``-U`` falla como en una instalación de winget.
 """
 
 from __future__ import annotations
@@ -164,6 +165,9 @@ def main(argv: list[str]) -> int:
     if argv == ["--version"]:
         out("2099.01.01")
         return 0
+    if argv == ["-U"] or argv[:1] == ["--update-to"]:
+        out("ERROR: You installed yt-dlp with winget. Use that to update", "stderr")
+        return 1
     if argv == ["--help"]:
         help_file = Path(__file__).with_name("fixtures") / "ytdlp_help.txt"
         out(help_file.read_text(encoding="utf-8"))

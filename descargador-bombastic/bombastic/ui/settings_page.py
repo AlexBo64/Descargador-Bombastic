@@ -33,14 +33,18 @@ from bombastic.core.media_prober import tool_launcher
 from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
 from bombastic.core.ytdlp_runner import CatalogRefresher, default_launcher
 from bombastic.ui.pages import Page
+from bombastic.ui.updates import Updates, UpdatesBox
 
 
 class SettingsPage(Page):
     #: Han cambiado las descargas simultáneas, los reintentos o el límite de velocidad.
     queue_settings_changed = Signal()
 
-    def __init__(self, ctx: AppContext, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, ctx: AppContext, updates: Updates | None = None, parent: QWidget | None = None
+    ) -> None:
         super().__init__("settings", parent)
+        self.updates = updates if updates is not None else Updates(ctx, parent=self)
         self._ctx = ctx
         self._probe: BinaryProbe | None = None
         self._statuses: dict[Tool, BinaryStatus] | None = None
@@ -122,6 +126,12 @@ class SettingsPage(Page):
         editor_form.addRow(self.hw_status)
         column.addWidget(self.editor_box)
 
+        # --- Actualizaciones ---
+        self.updates_box = QGroupBox()
+        updates_layout = QVBoxLayout(self.updates_box)
+        self.updates_panel = UpdatesBox(ctx, self.updates)
+        updates_layout.addWidget(self.updates_panel)
+
         # --- Dependencias ---
         self.dependencies_box = QGroupBox()
         deps = QVBoxLayout(self.dependencies_box)
@@ -160,6 +170,7 @@ class SettingsPage(Page):
         row.addStretch(1)
         deps.addLayout(row)
         column.addWidget(self.dependencies_box)
+        column.addWidget(self.updates_box)
 
         # --- Datos y registros ---
         self.data_box = QGroupBox()
@@ -243,6 +254,8 @@ class SettingsPage(Page):
         if not self.hw_status.text():
             self.hw_status.setText(tr("settings.hw.hint"))
 
+        self.updates_box.setTitle(tr("settings.updates"))
+        self.updates_panel.retranslate()
         self.dependencies_box.setTitle(tr("settings.dependencies"))
         self.dependencies_hint.setText(tr("settings.dependencies.hint"))
         self.recheck_button.setText(tr("settings.dependencies.recheck"))

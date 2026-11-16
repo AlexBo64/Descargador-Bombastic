@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0 — Fase 8: Actualizaciones
+
+- yt-dlp: comprobación al arrancar (cada 24 h por defecto, configurable o nunca) contra la
+  última release de GitHub, canal estable o nightly, y aviso con botón "Actualizar". Se usa
+  `yt-dlp -U` y, si falla (instalado con winget o pip), se descarga `yt-dlp.exe` de la release
+  a la carpeta de datos verificando `SHA2-256SUMS`, con vuelta atrás si la nueva no responde.
+- ffmpeg: descarga de la build `win64-gpl` de BtbN con `checksums.sha256`; se extraen
+  `ffmpeg.exe` y `ffprobe.exe` en otro hilo y se conserva la versión anterior hasta comprobar
+  que la nueva funciona (`ffmpeg -version`).
+- Aviso de versión nueva de la app (repositorio de GitHub configurable) que abre la descarga.
+- Asistente al arrancar si faltan yt-dlp o ffmpeg.
+
 ## 0.8.0 — Fase 7: Perfiles, historial y encadenado
 
 - Perfiles: guardan formato, calidad, incrustados, carpeta, modo avanzado, argumentos libres,

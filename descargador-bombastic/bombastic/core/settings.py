@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from bombastic.core.ffmpeg_tools import HW_ENCODERS
+from bombastic.core.updater import DEFAULT_APP_REPO, UPDATE_CHANNELS
 from bombastic.core.ytdlp_command import (
     COOKIE_BROWSERS,
     COOKIE_MODES,
@@ -80,6 +81,12 @@ class Settings:
     active_profile: str = ""
     #: Evitar descargar dos veces lo mismo con ``--download-archive``.
     use_download_archive: bool = False
+    #: Actualizaciones: canal de yt-dlp, cada cuántas horas comprobar (0 = nunca) y repositorio
+    #: de GitHub de la app (vacío = no avisar).
+    update_channel: str = "stable"
+    update_check_hours: int = 24
+    last_update_check: str = ""
+    app_update_repo: str = DEFAULT_APP_REPO
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""
@@ -103,6 +110,9 @@ class Settings:
             self.cookies_mode = defaults.cookies_mode
         if self.cookies_browser not in COOKIE_BROWSERS:
             self.cookies_browser = defaults.cookies_browser
+        if self.update_channel not in UPDATE_CHANNELS:
+            self.update_channel = defaults.update_channel
+        self.update_check_hours = max(0, min(self.update_check_hours, 24 * 30))
         self.max_concurrent = max(1, min(self.max_concurrent, 8))
         self.auto_retries = max(0, min(self.auto_retries, 10))
         self.max_concurrent_edits = max(1, min(self.max_concurrent_edits, 4))

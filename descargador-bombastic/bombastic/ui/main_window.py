@@ -29,6 +29,7 @@ from bombastic.core.i18n import tr
 from bombastic.core.media_prober import MediaProber, tool_launcher
 from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
+from bombastic.core.updater import should_check
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.editor_page import EditorPage
 from bombastic.ui.history_page import HistoryPage
@@ -37,6 +38,7 @@ from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.queue_page import QueuePage
 from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
+from bombastic.ui.updates import DependencyWizard, UpdateBar
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
 _PLACEHOLDER_PHASES: dict[str, int] = {}
@@ -130,7 +132,14 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(sidebar)
-        layout.addWidget(self.stack, 1)
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        self.update_bar = UpdateBar(self.settings_page.updates)
+        content_layout.addWidget(self.update_bar)
+        content_layout.addWidget(self.stack, 1)
+        layout.addWidget(content, 1)
         self.setCentralWidget(central)
 
         # --- Atajos: Ctrl+1 … Ctrl+6 ---
@@ -209,6 +218,15 @@ class MainWindow(QMainWindow):
         self._ctx.save_settings()
         self._unsubscribe()
         super().closeEvent(event)
+
+    def startup_checks(self) -> None:
+        """Tras mostrar la ventana: dependencias que faltan y comprobación de actualizaciones."""
+        if DependencyWizard.missing(self._ctx):
+            wizard = DependencyWizard(self._ctx, self.settings_page.updates, self)
+            wizard.open()
+        settings = self._ctx.settings
+        if should_check(settings.last_update_check, settings.update_check_hours):
+            self.settings_page.updates.check()
 
     def _apply_profile(self, profile_id: int) -> None:
         profile = self.profiles.get(profile_id)

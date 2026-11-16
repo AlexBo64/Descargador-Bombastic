@@ -133,6 +133,9 @@ def ffmpeg(args: list[str]) -> int:
 
 
 def main(argv: list[str]) -> int:
+    if argv == ["-version"]:
+        out("ffmpeg version N-99999-fake")
+        return 0
     if "-show_format" in argv:
         return probe(argv[-1])
     return ffmpeg(argv)

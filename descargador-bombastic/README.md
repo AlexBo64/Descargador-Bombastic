@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 7 (Perfiles, historial y encadenado).** Perfiles de opciones, historial con
+> **Estado: Fase 8 (Actualizaciones).** yt-dlp y ffmpeg se actualizan desde la app (con
+> SHA-256 y vuelta atrás), aviso de versión nueva de la app y asistente si falta algo.
+>
+> **Fase 7 (Perfiles, historial y encadenado):** Perfiles de opciones, historial con
 > búsqueda y acciones de edición encadenadas a cada descarga.
 >
 > **Fase 6 (Modo experto y recetas):** Comandos de ffmpeg a mano con variables,
@@ -85,6 +88,10 @@ Qué comprobar:
 22. **Historial** (`Ctrl+4`): búsqueda, filtro por resultado, volver a descargar con las mismas
     opciones, abrir archivo o carpeta, enviar al editor, borrar y vaciar. En Ajustes, "Evitar
     descargar dos veces lo mismo" activa `--download-archive` gestionado por la app.
+23. **Ajustes → Actualizaciones**: canal de yt-dlp (estable o nightly), cada cuántas horas
+    comprobar al arrancar, "Actualizar yt-dlp" y "Descargar o actualizar ffmpeg". Si hay versión
+    nueva aparece un aviso arriba con un botón para actualizar.
+24. Si falta yt-dlp o ffmpeg al arrancar, un asistente ofrece descargarlos a la carpeta de datos.
 
 ### Modo portable
 
@@ -138,12 +145,16 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 5 | Editor completo | Hecha |
 | 6 | Modo experto y recetas | Hecha |
 | 7 | Perfiles, historial y encadenado | Hecha |
-| 8 | Actualizaciones | Pendiente |
+| 8 | Actualizaciones | Hecha |
 | 9 | Integración con Windows | Pendiente |
 | 10 | Distribución (instalador, portable, GitHub Actions de release) | Pendiente |
 | 11 | Pulido y manual de usuario | Pendiente |
 
 ## Preguntas frecuentes
+
+**yt-dlp no descarga o da errores raros.** Las webs cambian a menudo: actualiza yt-dlp en
+Ajustes → Actualizaciones (o con el aviso que sale al arrancar). Si sigue fallando, prueba el
+canal nightly.
 
 Las entradas sobre SmartScreen, antivirus, cookies y "yt-dlp no descarga" se añadirán cuando
 existan las funciones correspondientes (fases 1, 3, 8 y 10).
