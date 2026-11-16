@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.0 — Nuevo aspecto
+
+- Estilo "aurora + cristal": fondo con degradado y manchas de color difuminadas, paneles y
+  tarjetas translúcidos con borde luminoso, esquinas más redondeadas y degradado violeta → cian
+  en los botones principales, la sección activa, la barra de progreso y los deslizadores.
+- Estilo propio para todos los controles que salían con el aspecto por defecto de Windows:
+  casillas, pestañas (con flechas para desplazarse), botones de menú, deslizadores, spinbox,
+  listas, tablas, menús, diálogos y el asistente.
+- Fundido suave al cambiar de sección.
+- El puntero pasa a ser una mano sobre todo lo pulsable (botones, desplegables, pestañas,
+  deslizadores, menús y la navegación lateral).
+- Los spinbox y desplegables ya no cambian de valor al hacer scroll con el puntero encima:
+  hay que pincharlos antes; mientras tanto, la rueda desplaza la página.
+- Corregido: las tarjetas de descarga y de edición se aplastaban (botones cortados) cuando la
+  lista llenaba la pantalla.
+- Editor: los controles del reproductor y los botones de acción se reparten en dos filas para
+  que no se corten.
+
 ## 1.0.0 — Fase 11: Pulido
 
 - Asistente de primer arranque: idioma y tema (en vivo), carpeta de descargas, comprobación de

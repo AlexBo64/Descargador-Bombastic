@@ -171,6 +171,17 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - No se ha podido compilar el `.exe` en el equipo de desarrollo (sin PyInstaller ni Inno Setup
   instalados): la compilación real es la de GitHub Actions o `build.ps1` en Windows.
 
+## Aspecto (1.1)
+
+- `ui/theme.py`: paletas con tokens de degradado (`bg_top`, `bg_bottom`, `blob_*`) y de cristal
+  (`glass*`, en `rgba`, solo para el QSS); `AuroraBackground` pinta el fondo; `fade_in` hace
+  el fundido entre secciones; `InteractionFilter` (uno por aplicación) pone la mano en lo
+  pulsable (QSS no puede cambiar el cursor) y hace que spinbox y desplegables solo respondan a
+  la rueda tras pincharlos.
+- Qt no difumina lo que hay detrás de un widget: el "cristal" son paneles translúcidos sobre
+  un fondo que ya está difuminado.
+- El editor no tiene fundido: el vídeo es una superficie nativa que no admite efectos.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

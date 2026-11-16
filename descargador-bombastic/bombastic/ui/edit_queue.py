@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -53,6 +54,7 @@ class EditCard(QFrame):
     def __init__(self, manager: EditManager, task: EditTask) -> None:
         super().__init__()
         self.setObjectName("DownloadCard")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.manager = manager
         self.task = task
         self.title = ElidedLabel()

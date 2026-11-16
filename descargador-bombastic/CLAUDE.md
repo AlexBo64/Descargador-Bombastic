@@ -35,7 +35,10 @@ Una fase no está terminada hasta que `ruff check .`, `ruff format --check .`, `
   `bombastic/resources/i18n/es.json` y `en.json` (un test falla si no coinciden).
 - Cada página implementa `retranslate()` para el cambio de idioma en caliente.
 - Colores solo mediante los marcadores de `resources/styles/app.qss` y las paletas de
-  `ui/theme.py`; si añades un color, añádelo a las dos paletas.
+  `ui/theme.py`; si añades un color, añádelo a las dos paletas. Los tokens que lee el código
+  (`accent`, `muted`, `bg_*`, `blob_*`) son `#rrggbb`; los `rgba` solo valen en el QSS.
+- Para revisar el aspecto sin pantalla: `QT_QPA_PLATFORM=offscreen` y
+  `QT_QPA_FONTDIR=C:/Windows/Fonts` (si no, el texto sale en cuadrados), y `widget.grab()`.
 - Nombres de variables y funciones en inglés; docstrings y comentarios en español.
 - Código completo: nada de "resto igual" ni TODO sin explicar.
 - Código específico de Windows solo en `bombastic/platform_win/`. Los tests deben pasar también

@@ -72,6 +72,7 @@ class PlayerWidget(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("Player")
         self.fps = _DEFAULT_FPS
         self.marker_in: float | None = None
         self.marker_out: float | None = None
@@ -117,19 +118,24 @@ class PlayerWidget(QWidget):
             self.fwd5,
         ):
             controls.addWidget(widget)
-        controls.addWidget(self.time_label)
         controls.addStretch(1)
-        controls.addWidget(self.in_button)
-        controls.addWidget(self.out_button)
-        controls.addWidget(self.clear_markers_button)
-        controls.addWidget(self.speed_combo)
-        controls.addWidget(self.volume)
+        controls.addWidget(self.time_label)
+        # Segunda fila: marcadores, velocidad y volumen (en una sola no caben).
+        extras = QHBoxLayout()
+        extras.setSpacing(6)
+        extras.addWidget(self.in_button)
+        extras.addWidget(self.out_button)
+        extras.addWidget(self.clear_markers_button)
+        extras.addStretch(1)
+        extras.addWidget(self.speed_combo)
+        extras.addWidget(self.volume)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.video, 1)
         layout.addWidget(self.slider)
         layout.addLayout(controls)
+        layout.addLayout(extras)
 
         self.play_button.clicked.connect(self.toggle_play)
         self.back5.clicked.connect(lambda: self.seek_relative(-5))

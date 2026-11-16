@@ -11,6 +11,7 @@ from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QKeySequence, QSh
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -173,12 +174,17 @@ class EditorPage(Page):
         self.queue_button.setProperty("primary", True)
         self.feedback = QLabel()
         self.feedback.setWordWrap(True)
-        actions = QHBoxLayout()
-        actions.addWidget(self.feedback, 1)
-        actions.addWidget(self.expert_button)
-        actions.addWidget(self.preview_button)
-        actions.addWidget(self.command_button)
-        actions.addWidget(self.queue_button)
+        # Aviso arriba y botones en dos filas: en una sola no caben junto a las herramientas.
+        actions = QVBoxLayout()
+        actions.addWidget(self.feedback)
+        buttons = QGridLayout()
+        buttons.setHorizontalSpacing(8)
+        buttons.setVerticalSpacing(8)
+        buttons.addWidget(self.expert_button, 0, 0)
+        buttons.addWidget(self.preview_button, 0, 1)
+        buttons.addWidget(self.command_button, 1, 0)
+        buttons.addWidget(self.queue_button, 1, 1)
+        actions.addLayout(buttons)
 
         left = QWidget()
         left_layout = QVBoxLayout(left)
@@ -193,8 +199,8 @@ class EditorPage(Page):
         splitter = QSplitter()
         splitter.addWidget(left)
         splitter.addWidget(right)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(0, 5)
+        splitter.setStretchFactor(1, 4)
 
         self.body.addLayout(top)
         self.body.addWidget(splitter, 1)

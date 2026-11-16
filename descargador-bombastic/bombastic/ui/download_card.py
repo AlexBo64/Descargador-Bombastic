@@ -159,6 +159,8 @@ class DownloadCard(QFrame):
     def __init__(self, item: DownloadItem, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("DownloadCard")
+        # Altura fija a su contenido: si no, el área de scroll las aplasta al mínimo.
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.item_id = item.item_id
         self._item = item
         self._has_thumbnail = False

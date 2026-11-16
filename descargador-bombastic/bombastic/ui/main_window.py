@@ -51,7 +51,7 @@ from bombastic.ui.library_page import LibraryPage
 from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.queue_page import QueuePage
 from bombastic.ui.settings_page import SettingsPage
-from bombastic.ui.theme import load_icon
+from bombastic.ui.theme import AuroraBackground, fade_in, load_icon
 from bombastic.ui.updates import DependencyWizard, UpdateBar
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
@@ -140,8 +140,9 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(page)
             self.nav.addItem(QListWidgetItem())
 
-        central = QWidget()
+        central = AuroraBackground(ctx.theme.palette)
         central.setObjectName("Central")
+        self.background = central
         layout = QHBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow):
 
         self.nav.currentRowChanged.connect(self._on_row_changed)
         self._unsubscribe = ctx.translator.subscribe(lambda _language: self.retranslate())
-        ctx.theme.changed.connect(self._refresh_icons)
+        ctx.theme.changed.connect(self._on_theme_changed)
 
         # --- Integración con Windows ---
         self.setAcceptDrops(True)
@@ -209,6 +210,10 @@ class MainWindow(QMainWindow):
     def _on_row_changed(self, row: int) -> None:
         if 0 <= row < len(PAGES):
             self.stack.setCurrentIndex(row)
+            # Fundido al cambiar de sección. El editor no: el vídeo es una superficie nativa
+            # que no se lleva bien con los efectos gráficos.
+            if PAGES[row] != "editor" and self.isVisible():
+                self._fade = fade_in(self.pages[PAGES[row]])
             self._ctx.settings.last_page = PAGES[row]
 
     # ------------------------------------------------------------ textos y tema
@@ -225,6 +230,10 @@ class MainWindow(QMainWindow):
             page.retranslate()
         if getattr(self, "tray", None) is not None:
             self.tray.retranslate()  # type: ignore[union-attr]
+
+    def _on_theme_changed(self) -> None:
+        self.background.set_palette(self._ctx.theme.palette)
+        self._refresh_icons()
 
     def _refresh_icons(self) -> None:
         color = self._ctx.theme.palette["muted"]
