@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — Actualizar la app desde la propia app
+
+- Cuando sale una versión nueva, la barra de aviso tiene el botón "Actualizar ahora": descarga
+  el instalador de la release de GitHub, lo comprueba con `SHA256SUMS.txt` (si no coincide no
+  se ejecuta), cierra la app como "Salir" (pregunta si hay descargas o ediciones en marcha) y
+  lanza el instalador en modo silencioso. Al terminar, el instalador vuelve a abrir la app
+  (`/relaunch=1`). La cola se recupera como en cualquier reinicio.
+- La versión portable y la ejecución desde el código siguen enlazando la página de descarga.
+- El instalador descargado se borra al arrancar la siguiente vez.
+
 ## 1.1.0 — Nuevo aspecto
 
 - Estilo "aurora + cristal": fondo con degradado y manchas de color difuminadas, paneles y

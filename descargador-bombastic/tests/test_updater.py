@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QCoreApplication, QEvent, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager
 from pytestqt.qtbot import QtBot
 
@@ -128,6 +128,9 @@ def github(tmp_path: Path) -> FakeGitHub:
 def _run(qtbot: QtBot, step: up._Step) -> tuple[bool, str]:
     with qtbot.waitSignal(step.finished, timeout=TIMEOUT) as blocker:
         step.start()  # type: ignore[attr-defined]
+    # Borrar ya las respuestas de red pendientes: si Python destruye antes el paso (con su
+    # FileFetch) que esas respuestas, Qt aborta al acabar el test.
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     return blocker.args[0], blocker.args[1]
 
 
@@ -218,6 +221,7 @@ def test_updates_ui(
     updates.check()
     qtbot.waitUntil(lambda: len(seen) == 2, timeout=TIMEOUT)
     assert {s[0] for s in seen} == {"ytdlp", "app"}
+    assert updates.app_release is not None and updates.app_release.tag == "v99.0.0"
     assert ctx.settings.last_update_check
     assert bar.isVisibleTo(bar.parentWidget() or bar) or not bar.isHidden()
 
@@ -230,3 +234,64 @@ def test_updates_ui(
     wizard = DependencyWizard(ctx, updates)
     qtbot.addWidget(wizard)
     assert isinstance(DependencyWizard.missing(ctx), list)
+
+
+def test_app_update_downloads_and_verifies(
+    qtbot: QtBot, github: FakeGitHub, tmp_path: Path
+) -> None:
+    network = QNetworkAccessManager()
+    files = {up.APP_INSTALLER_ASSET: b"instalador"}
+    github.release("me/app", "v99.0.0", files, up.APP_SUMS_ASSET)
+    release = up.parse_release(
+        (tmp_path / "github" / "api" / "me" / "app" / "releases" / "latest").read_text()
+    )
+    step = up.AppUpdate(network, release, tmp_path / "cache")
+    assert _run(qtbot, step) == (True, "updates.done.app")
+    assert step.installer is not None and step.installer.read_bytes() == b"instalador"
+
+    # Suma que no coincide: se descarta el archivo.
+    (tmp_path / "github" / "files" / "me_app" / up.APP_SUMS_ASSET).write_text(
+        f"{'0' * 64}  {up.APP_INSTALLER_ASSET}\n", encoding="utf-8"
+    )
+    bad = up.AppUpdate(network, release, tmp_path / "cache2")
+    assert _run(qtbot, bad) == (False, "updates.error.checksum")
+    assert not (tmp_path / "cache2" / up.APP_INSTALLER_ASSET).exists()
+
+    # Sin sumas publicadas no se descarga nada.
+    no_sums = up.Release("v99", "v99", "", "", {up.APP_INSTALLER_ASSET: "file:///x"})
+    no_sums_step = up.AppUpdate(network, no_sums, tmp_path)
+    assert _run(qtbot, no_sums_step) == (False, "updates.error.no_checksum")
+    assert "/SILENT" in up.installer_args() and "/relaunch=1" in up.installer_args()
+
+
+def test_update_bar_installs_app(
+    qtbot: QtBot,
+    ctx: AppContext,
+    github: FakeGitHub,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    github.release("me/app", "v99.0.0", {up.APP_INSTALLER_ASSET: b"setup"}, up.APP_SUMS_ASSET)
+    updates = Updates(ctx, api=github.api)
+    updates.app_release = up.parse_release(
+        (tmp_path / "github" / "api" / "me" / "app" / "releases" / "latest").read_text()
+    )
+    bar = UpdateBar(updates)
+    qtbot.addWidget(bar)
+
+    # Código fuente o portable: el botón solo enlaza la página de la release.
+    monkeypatch.setattr(updates, "can_install_app", lambda: False)
+    bar.show_update("app", "v99.0.0", "https://example.com/r")
+    assert bar.action_button.text() == "Ver la descarga"
+
+    monkeypatch.setattr(updates, "can_install_app", lambda: True)
+    bar.show_update("app", "v99.0.0", "https://example.com/r")
+    assert bar.action_button.text() == "Actualizar ahora"
+    with qtbot.waitSignal(bar.install_ready, timeout=TIMEOUT) as blocker:
+        bar.action_button.click()
+    installer = blocker.args[0]
+    assert installer.read_bytes() == b"setup"
+    assert installer.parent == ctx.paths.cache_dir
+
+    bar.install_cancelled()
+    assert bar.action_button.isEnabled()

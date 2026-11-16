@@ -6,7 +6,9 @@
 - ffmpeg: build "win64-gpl" de BtbN (GitHub), con su ``checksums.sha256``. Se extraen
   ``ffmpeg.exe`` y ``ffprobe.exe`` a ``bin``, guardando la versión anterior hasta comprobar que
   la nueva responde a ``-version``; si no, se vuelve atrás.
-- La app: se consulta la última release de un repositorio configurable y se enlaza.
+- La app: se consulta la última release de un repositorio configurable. En la versión instalada
+  se descarga ``DescargadorBombastic-Setup.exe`` verificando ``SHA256SUMS.txt`` y se ejecuta en
+  modo silencioso al cerrar la app; el instalador la vuelve a abrir al terminar.
 """
 
 from __future__ import annotations
@@ -36,6 +38,8 @@ FFMPEG_REPO = "BtbN/FFmpeg-Builds"
 FFMPEG_ASSET = "ffmpeg-master-latest-win64-gpl.zip"
 YTDLP_ASSET = "yt-dlp.exe"
 DEFAULT_APP_REPO = "AlexBo64/Descargador-Bombastic"
+APP_INSTALLER_ASSET = "DescargadorBombastic-Setup.exe"
+APP_SUMS_ASSET = "SHA256SUMS.txt"
 UPDATE_CHANNELS: tuple[str, ...] = ("stable", "nightly")
 
 
@@ -159,6 +163,11 @@ def drop_backups(undo: list[tuple[Path, Path | None]]) -> None:
     for _final, backup in undo:
         if backup is not None:
             backup.unlink(missing_ok=True)
+
+
+def installer_args() -> list[str]:
+    """Inno Setup sin preguntas, cerrando la app si sigue abierta y volviéndola a abrir."""
+    return ["/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS", "/relaunch=1"]
 
 
 # ------------------------------------------------------------- operaciones Qt
@@ -464,3 +473,50 @@ class FfmpegUpdate(_Step):
             return
         drop_backups(self._undo)
         self._finish(True, "updates.done.ffmpeg")
+
+
+class AppUpdate(_Step):
+    """Descarga el instalador de una release de la app y comprueba su SHA-256.
+
+    Al terminar bien, ``installer`` es la ruta del ``.exe`` listo para ejecutar.
+    """
+
+    def __init__(
+        self,
+        network: QNetworkAccessManager,
+        release: Release,
+        cache_dir: Path,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(network, parent)
+        self._release = release
+        self._cache = cache_dir
+        self.installer: Path | None = None
+
+    def start(self) -> None:
+        assets = self._release.assets
+        if APP_INSTALLER_ASSET not in assets:
+            self._finish(False, "updates.error.no_asset")
+            return
+        if APP_SUMS_ASSET not in assets:
+            self._finish(False, "updates.error.no_checksum")
+            return
+        self.status.emit("updates.status.downloading")
+        self._get_text(assets[APP_SUMS_ASSET], self._on_sums)
+
+    def _on_sums(self, text: str) -> None:
+        expected = parse_checksums(text).get(APP_INSTALLER_ASSET)
+        if expected is None:
+            self._finish(False, "updates.error.no_checksum")
+            return
+        target = self._cache / APP_INSTALLER_ASSET
+        url = self._release.assets[APP_INSTALLER_ASSET]
+        self._get_file(url, target, lambda: self._verify(target, expected))
+
+    def _verify(self, path: Path, expected: str) -> None:
+        if sha256_of(path) != expected:
+            path.unlink(missing_ok=True)
+            self._finish(False, "updates.error.checksum")
+            return
+        self.installer = path
+        self._finish(True, "updates.done.app")

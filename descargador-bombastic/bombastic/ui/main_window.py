@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QUrl
+from PySide6.QtCore import QProcess, QSize, Qt, QUrl
 from PySide6.QtGui import (
     QCloseEvent,
     QDesktopServices,
@@ -40,7 +40,7 @@ from bombastic.core.i18n import tr
 from bombastic.core.media_prober import MediaProber, tool_launcher
 from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
-from bombastic.core.updater import should_check
+from bombastic.core.updater import installer_args, should_check
 from bombastic.platform_win.context_menu import MEDIA_EXTENSIONS
 from bombastic.platform_win.tray import Tray
 from bombastic.ui.downloads_page import DownloadsPage
@@ -153,6 +153,7 @@ class MainWindow(QMainWindow):
         content_layout.setSpacing(0)
         self.update_bar = UpdateBar(self.settings_page.updates)
         content_layout.addWidget(self.update_bar)
+        self.update_bar.install_ready.connect(self.install_update)
         content_layout.addWidget(self.stack, 1)
         layout.addWidget(content, 1)
         self.setCentralWidget(central)
@@ -284,6 +285,16 @@ class MainWindow(QMainWindow):
             QApplication.quit()
         else:
             self._quitting = False
+
+    def install_update(self, installer: Path) -> None:
+        """Cierra la app como "Salir" y lanza el instalador, que la vuelve a abrir al acabar."""
+        self._quitting = True
+        if not self.close():
+            self._quitting = False
+            self.update_bar.install_cancelled()
+            return
+        QProcess.startDetached(str(installer), installer_args())
+        QApplication.quit()
 
     def bring_to_front(self) -> None:
         if self.isMinimized() or not self.isVisible():

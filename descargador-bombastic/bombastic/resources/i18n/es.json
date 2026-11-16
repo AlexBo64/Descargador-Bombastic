@@ -530,7 +530,7 @@
   "updates.available.ytdlp": "Hay una versión nueva de yt-dlp ({version}). Actualizar suele arreglar las descargas que fallan.",
   "updates.available.app": "Hay una versión nueva de Descargador Bombastic ({version}).",
   "updates.bar.action.ytdlp": "Actualizar",
-  "updates.bar.action.app": "Ver la descarga",
+  "updates.bar.action.app": "Actualizar ahora",
   "updates.bar.close": "Cerrar",
   "updates.done.ytdlp": "yt-dlp actualizado.",
   "updates.done.ffmpeg": "ffmpeg instalado y comprobado.",
@@ -587,5 +587,8 @@
   "settings.shortcuts.paste": "Ctrl+V (en Descargas, fuera del campo de texto): pegar y añadir enlaces",
   "settings.shortcuts.player": "Espacio: reproducir o pausar (en el Editor) · Flechas: ±1 s · Mayús+flechas: ±5 s",
   "settings.shortcuts.markers": "I / O: marcar inicio y fin del tramo",
-  "settings.shortcuts.frames": "Coma / punto: fotograma anterior o siguiente (aproximado)"
+  "settings.shortcuts.frames": "Coma / punto: fotograma anterior o siguiente (aproximado)",
+  "updates.bar.action.app_link": "Ver la descarga",
+  "updates.done.app": "Descargado y comprobado. Cerrando para instalar; la app se volverá a abrir sola.",
+  "updates.app.cancelled": "No se ha cerrado la app: pulsa otra vez para instalar la versión nueva."
 }

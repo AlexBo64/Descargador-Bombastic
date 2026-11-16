@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
+import sys
+from pathlib import Path
+
 from PySide6.QtCore import QObject, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager
@@ -29,9 +33,12 @@ from bombastic.core.db import now_iso
 from bombastic.core.i18n import tr
 from bombastic.core.media_prober import tool_launcher
 from bombastic.core.updater import (
+    APP_INSTALLER_ASSET,
     GITHUB_API,
     UPDATE_CHANNELS,
+    AppUpdate,
     FfmpegUpdate,
+    Release,
     ReleaseCheck,
     YtdlpUpdate,
     YtdlpVersionCheck,
@@ -57,6 +64,18 @@ class Updates(QObject):
         self.api = api
         self.network = QNetworkAccessManager(self)
         self.busy = False
+        #: Última release de la app más nueva que la instalada (``None`` si no hay).
+        self.app_release: Release | None = None
+        #: Instalador descargado y comprobado, listo para ejecutar.
+        self.app_installer: Path | None = None
+        # El de una actualización anterior ya no hace falta (si sigue en uso, otra vez será).
+        with contextlib.suppress(OSError):
+            (ctx.paths.cache_dir / APP_INSTALLER_ASSET).unlink(missing_ok=True)
+
+    def can_install_app(self) -> bool:
+        """Solo la versión instalada en Windows se actualiza sola; la portable y el código no."""
+        frozen = bool(getattr(sys, "frozen", False))
+        return sys.platform == "win32" and frozen and not self._ctx.paths.portable
 
     def _track(self, step: QObject) -> None:
         self.busy = True
@@ -92,6 +111,7 @@ class Updates(QObject):
                 app.deleteLater()
                 release = app.release
                 if ok and release is not None and is_newer(release.tag, __version__):
+                    self.app_release = release
                     self.available.emit("app", release.tag, release.url)
 
             app.finished.connect(app_done)
@@ -108,6 +128,17 @@ class Updates(QObject):
             self_update,
             self,
         )
+        self._track(step)
+        step.start()
+        return step
+
+    def update_app(self) -> AppUpdate | None:
+        """Descarga y comprueba el instalador de la versión nueva (no lo ejecuta)."""
+        if self.app_release is None:
+            return None
+        step = AppUpdate(self.network, self.app_release, self._ctx.paths.cache_dir, self)
+        # Antes de _track: así ya está guardado cuando se emite ``finished``.
+        step.finished.connect(lambda ok, _key: setattr(self, "app_installer", step.installer))
         self._track(step)
         step.start()
         return step
@@ -230,6 +261,9 @@ class UpdatesBox(QWidget):
 class UpdateBar(QFrame):
     """Aviso en la parte superior de la ventana: hay una versión nueva."""
 
+    #: El instalador de la app está descargado y comprobado: hay que cerrar y ejecutarlo.
+    install_ready = Signal(Path)
+
     def __init__(self, updates: Updates, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("UpdateBar")
@@ -255,12 +289,20 @@ class UpdateBar(QFrame):
     def show_update(self, what: str, version: str, url: str) -> None:
         self._what, self._url = what, url
         self.label.setText(tr(f"updates.available.{what}", version=version))
-        self.action_button.setText(tr(f"updates.bar.action.{what}"))
+        action = what
+        if what == "app" and not self.updates.can_install_app():
+            action = "app_link"
+        self.action_button.setText(tr(f"updates.bar.action.{action}"))
         self.action_button.setEnabled(True)
+        self.action_button.setVisible(True)
         self.setVisible(True)
 
     def _act(self) -> None:
-        if self._what == "app":
+        if self._what == "app" and self.updates.can_install_app():
+            self.action_button.setEnabled(False)
+            self.label.setText(tr("updates.status.downloading"))
+            self.updates.update_app()
+        elif self._what == "app":
             QDesktopServices.openUrl(QUrl(self._url))
             self.hide()
         else:
@@ -268,8 +310,21 @@ class UpdateBar(QFrame):
             self.label.setText(tr("updates.status.self_update"))
             self.updates.update_ytdlp()
 
+    def install_cancelled(self) -> None:
+        """No se ha podido cerrar la app (el usuario ha dicho que no): se puede reintentar."""
+        self.label.setText(tr("updates.app.cancelled"))
+        self.action_button.setEnabled(True)
+
     def _on_finished(self, ok: bool, key: str) -> None:
-        if self.isVisible() and self._what == "ytdlp" and key.startswith("updates.done"):
+        if self.isVisible() and self._what == "app":
+            if ok and key == "updates.done.app":
+                self.label.setText(tr(key))
+                if self.updates.app_installer is not None:
+                    self.install_ready.emit(self.updates.app_installer)
+            elif not ok:
+                self.label.setText(tr(key))
+                self.action_button.setEnabled(True)
+        elif self.isVisible() and self._what == "ytdlp" and key.startswith("updates.done"):
             self.label.setText(tr(key))
             self.action_button.setVisible(False)
         elif self.isVisible() and not ok and self._what == "ytdlp":

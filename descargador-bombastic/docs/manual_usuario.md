@@ -168,7 +168,9 @@ predeterminado se aplica al abrir la app.
 - **Windows**: seguir en la bandeja al cerrar, notificaciones y menú contextual del Explorador.
 - **Actualizaciones**: canal de yt-dlp (estable o nightly), cada cuántas horas comprobar,
   actualizar yt-dlp y descargar o actualizar ffmpeg. Todo se comprueba con su SHA-256 y, si la
-  versión nueva no funciona, se vuelve a la anterior.
+  versión nueva no funciona, se vuelve a la anterior. Cuando hay una versión nueva de la app,
+  la barra de arriba ofrece **Actualizar ahora**: la descarga, la comprueba, se cierra, la
+  instala y se vuelve a abrir sola. En la versión portable, el botón abre la página de descarga.
 - **Dependencias**: dónde está cada programa y su versión.
 - **Datos y registros**: dónde se guardan tus datos y un botón para abrir los logs.
 - **Atajos** y **Acerca de** (versiones y licencias).
