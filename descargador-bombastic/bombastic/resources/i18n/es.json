@@ -590,5 +590,10 @@
   "settings.shortcuts.frames": "Coma / punto: fotograma anterior o siguiente (aproximado)",
   "updates.bar.action.app_link": "Ver la descarga",
   "updates.done.app": "Descargado y comprobado. Cerrando para instalar; la app se volverá a abrir sola.",
-  "updates.app.cancelled": "No se ha cerrado la app: pulsa otra vez para instalar la versión nueva."
+  "updates.app.cancelled": "No se ha cerrado la app: pulsa otra vez para instalar la versión nueva.",
+  "player.volume": "Volumen",
+  "player.volume.tooltip": "Volumen: {value} %",
+  "player.subtitles.tooltip": "Subtítulos que se muestran en la vista previa",
+  "player.subtitles.off": "Sin subtítulos",
+  "player.subtitles.track": "Subtítulos {n} {name}"
 }

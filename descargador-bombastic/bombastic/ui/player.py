@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QRect, Qt, QUrl, Signal
+from PySide6.QtCore import QLocale, QRect, Qt, QUrl, Signal
 from PySide6.QtGui import QColor, QPainter, QPaintEvent
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtMultimedia import QAudioOutput, QMediaMetaData, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
     QComboBox,
@@ -105,6 +105,11 @@ class PlayerWidget(QWidget):
         self.volume.setValue(80)
         self.volume.setFixedWidth(90)
         self.audio.setVolume(0.8)
+        self.volume_label = QLabel()
+        self.volume_label.setProperty("muted", True)
+        #: Pistas de subtítulos del archivo; oculto si no tiene.
+        self.subs_combo = QComboBox()
+        self.subs_combo.setVisible(False)
 
         controls = QHBoxLayout()
         controls.setSpacing(6)
@@ -127,7 +132,9 @@ class PlayerWidget(QWidget):
         extras.addWidget(self.out_button)
         extras.addWidget(self.clear_markers_button)
         extras.addStretch(1)
+        extras.addWidget(self.subs_combo)
         extras.addWidget(self.speed_combo)
+        extras.addWidget(self.volume_label)
         extras.addWidget(self.volume)
 
         layout = QVBoxLayout(self)
@@ -150,7 +157,11 @@ class PlayerWidget(QWidget):
         self.speed_combo.currentIndexChanged.connect(
             lambda: self.player.setPlaybackRate(float(self.speed_combo.currentData()))
         )
-        self.volume.valueChanged.connect(lambda v: self.audio.setVolume(v / 100))
+        self.volume.valueChanged.connect(self._on_volume)
+        self.subs_combo.activated.connect(
+            lambda: self.player.setActiveSubtitleTrack(int(self.subs_combo.currentData()))
+        )
+        self.player.tracksChanged.connect(self._fill_subtitles)
         self.slider.sliderMoved.connect(self.player.setPosition)
         self.player.durationChanged.connect(lambda d: self.slider.setRange(0, max(0, d)))
         self.player.positionChanged.connect(self._on_position)
@@ -171,12 +182,40 @@ class PlayerWidget(QWidget):
         self.clear_markers_button.setText(tr("player.clear_markers"))
         self.frame_back.setToolTip(tr("player.frame_back"))
         self.frame_forward.setToolTip(tr("player.frame_forward"))
+        self.volume_label.setText(tr("player.volume"))
+        self._on_volume(self.volume.value())
+        self.subs_combo.setToolTip(tr("player.subtitles.tooltip"))
+        self._fill_subtitles()
+
+    def _on_volume(self, value: int) -> None:
+        self.audio.setVolume(value / 100)
+        self.volume.setToolTip(tr("player.volume.tooltip", value=value))
+
+    def _fill_subtitles(self) -> None:
+        """Rellena el selector de subtítulos; por defecto, la primera pista activa."""
+        tracks = self.player.subtitleTracks()
+        active = self.player.activeSubtitleTrack()
+        if tracks and active < 0 and self.subs_combo.count() == 0:
+            # Archivo recién abierto: como los reproductores, mostrar la primera pista.
+            active = 0
+            self.player.setActiveSubtitleTrack(0)
+        self.subs_combo.clear()
+        self.subs_combo.addItem(tr("player.subtitles.off"), -1)
+        for index, meta in enumerate(tracks):
+            language = meta.value(QMediaMetaData.Key.Language)
+            name = QLocale(language).nativeLanguageName() if language else ""
+            self.subs_combo.addItem(tr("player.subtitles.track", n=index + 1, name=name), index)
+        self.subs_combo.setCurrentIndex(max(0, self.subs_combo.findData(active)))
+        self.subs_combo.setVisible(bool(tracks))
+        if not tracks:
+            self.subs_combo.clear()
 
     # ----------------------------------------------------------------- archivo
 
     def load(self, path: Path, fps: float | None = None) -> None:
         self.fps = fps or _DEFAULT_FPS
         self.clear_markers()
+        self.subs_combo.clear()
         self.player.setSource(QUrl.fromLocalFile(str(path)))
 
     def unload(self) -> None:

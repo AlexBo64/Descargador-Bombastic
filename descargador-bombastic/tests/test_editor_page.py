@@ -169,3 +169,17 @@ def test_main_window_has_the_editor(qtbot: QtBot, ctx: AppContext) -> None:
     assert window.queue_page.edit_view is not None
     QApplication.processEvents()
     assert window.close()
+
+
+def test_player_volume_label_and_hidden_subtitles(
+    qtbot: QtBot, editor: tuple[EditorPage, EditManager], tmp_path: Path
+) -> None:
+    page, _manager = editor
+    player = page.player
+    assert player.volume_label.text() == "Volumen"
+    player.volume.setValue(35)
+    assert player.volume.toolTip() == "Volumen: 35 %"
+    assert player.audio.volume() == pytest.approx(0.35)
+    # Sin pistas de subtítulos (archivo falso) el selector no se ve.
+    _open(qtbot, page, tmp_path / "a.mp4")
+    assert not player.subs_combo.isVisibleTo(page)

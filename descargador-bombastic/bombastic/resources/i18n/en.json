@@ -590,5 +590,10 @@
   "settings.shortcuts.frames": "Comma / period: previous or next frame (approximate)",
   "updates.bar.action.app_link": "See the download",
   "updates.done.app": "Downloaded and verified. Closing to install; the app will reopen by itself.",
-  "updates.app.cancelled": "The app was not closed: click again to install the new version."
+  "updates.app.cancelled": "The app was not closed: click again to install the new version.",
+  "player.volume": "Volume",
+  "player.volume.tooltip": "Volume: {value} %",
+  "player.subtitles.tooltip": "Subtitles shown in the preview",
+  "player.subtitles.off": "No subtitles",
+  "player.subtitles.track": "Subtitles {n} {name}"
 }
