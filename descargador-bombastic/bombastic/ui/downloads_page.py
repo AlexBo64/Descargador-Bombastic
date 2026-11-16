@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, Signal
@@ -26,11 +27,12 @@ from PySide6.QtWidgets import (
 
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool, locate
-from bombastic.core.chain import CHAIN_KINDS, ChainAction
+from bombastic.core.chain import CHAIN_KINDS, ChainAction, chain_suggestions
 from bombastic.core.download_manager import STAGING, DownloadManager, ItemState
 from bombastic.core.history import PROFILE_FIELDS, Profile, ProfileStore
 from bombastic.core.i18n import tr
 from bombastic.core.paths import resources_dir
+from bombastic.core.recipes import RecipeStore
 from bombastic.core.thumbnails import ThumbnailLoader
 from bombastic.core.urls import extract_urls
 from bombastic.core.ytdlp_command import (
@@ -56,13 +58,23 @@ from bombastic.core.ytdlp_options import (
 from bombastic.core.ytdlp_runner import Launcher, default_launcher, describe
 from bombastic.ui.advanced_dialog import AdvancedDialog
 from bombastic.ui.download_card import DownloadCard, output_folder
+from bombastic.ui.effects import explode_and_remove, fade_out_and_remove
 from bombastic.ui.formats_dialog import FormatsDialog
 from bombastic.ui.pages import Page
+from bombastic.ui.theme import fade_in
 
 #: Rápido para descargas pequeñas, sin saturar si fallan muchas por la red.
 _RETRY_DELAY_MS = 5000
 #: Enlace de ejemplo para la vista previa del comando.
 _PREVIEW_URL = "https://www.youtube.com/watch?v=…"
+
+
+class SuggestionComboBox(QComboBox):
+    """Desplegable editable con sugerencias; sin sugerencias no abre una lista vacía."""
+
+    def showPopup(self) -> None:
+        if self.count():
+            super().showPopup()
 
 
 class DownloadsPage(Page):
@@ -153,11 +165,17 @@ class DownloadsPage(Page):
 
         # --- Acción encadenada y perfil ---
         self.profiles = profiles if profiles is not None else ProfileStore(ctx.db)
+        self.recipes = RecipeStore(ctx.db)
         self.chain_label = QLabel()
         self.chain_combo = QComboBox()
         self.chain_combo.setObjectName("ChainCombo")
-        self.chain_value = QLineEdit()
-        self.chain_value.setMaximumWidth(220)
+        # Desplegable con los valores típicos de cada acción, en el que también se puede escribir.
+        self.chain_value = SuggestionComboBox()
+        self.chain_value.setObjectName("ChainValue")
+        self.chain_value.setEditable(True)
+        self.chain_value.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.chain_value.setMinimumWidth(170)
+        self.chain_value.setMaximumWidth(260)
         self.chain_delete = QCheckBox()
         chain_row = QHBoxLayout()
         chain_row.setSpacing(10)
@@ -241,8 +259,11 @@ class DownloadsPage(Page):
         self.manager.item_removed.connect(self._on_item_removed)
         self.thumbnails.loaded.connect(self._on_thumbnail_loaded)
 
-        self.chain_combo.currentIndexChanged.connect(self._on_chain_changed)
-        self.chain_value.editingFinished.connect(self._on_chain_changed)
+        self.chain_combo.currentIndexChanged.connect(self._on_chain_kind_changed)
+        self.chain_value.activated.connect(lambda _index: self._on_chain_changed())
+        line_edit = self.chain_value.lineEdit()
+        assert line_edit is not None
+        line_edit.editingFinished.connect(self._on_chain_changed)
         self.chain_delete.toggled.connect(self._on_chain_changed)
         self.profile_combo.activated.connect(self._on_profile_chosen)
         self.save_profile_button.clicked.connect(self._ask_profile_name)
@@ -394,29 +415,50 @@ class DownloadsPage(Page):
             self.chain_combo.addItem(tr(f"downloads.chain.{kind}"), kind)
         self.chain_combo.setCurrentIndex(max(0, self.chain_combo.findData(action.kind)))
         self.chain_combo.blockSignals(False)
-        self.chain_value.blockSignals(True)
-        self.chain_value.setText(action.value)
-        self.chain_value.blockSignals(False)
         self.chain_delete.blockSignals(True)
         self.chain_delete.setChecked(action.delete_original)
         self.chain_delete.blockSignals(False)
-        self._sync_chain_controls()
+        self._sync_chain_controls(action.value)
 
-    def _sync_chain_controls(self) -> None:
+    def _sync_chain_controls(self, value: str) -> None:
+        """Rellena el desplegable de valor con las opciones de la acción y pone ``value``."""
         kind = str(self.chain_combo.currentData() or "none")
         active = kind != "none"
         self.chain_value.setVisible(active)
         self.chain_delete.setVisible(active)
-        self.chain_value.setPlaceholderText(
-            tr(f"downloads.chain.{kind}.placeholder") if active else ""
-        )
+        self.chain_value.blockSignals(True)
+        self.chain_value.clear()
+        options = chain_suggestions(kind, self.recipes)
+        self.chain_value.addItems(options)
+        self.chain_value.setEditText(value)
+        # Sin opciones (recortar, o no hay recetas) no hay flecha: es solo una caja de texto.
+        if self.chain_value.property("noOptions") != (not options):
+            self.chain_value.setProperty("noOptions", not options)
+            style = self.chain_value.style()
+            style.unpolish(self.chain_value)
+            style.polish(self.chain_value)
+        line_edit = self.chain_value.lineEdit()
+        if line_edit is not None:
+            placeholder = tr(f"downloads.chain.{kind}.placeholder") if active else ""
+            line_edit.setPlaceholderText(placeholder)
+        self.chain_value.blockSignals(False)
+
+    def chain_has_options(self) -> bool:
+        return self.chain_value.count() > 0
+
+    def _on_chain_kind_changed(self) -> None:
+        """Al cambiar de acción se propone su primer valor típico."""
+        kind = str(self.chain_combo.currentData() or "none")
+        options = chain_suggestions(kind, self.recipes)
+        self._sync_chain_controls(options[0] if options else "")
+        self._on_chain_changed()
 
     def _on_chain_changed(self) -> None:
         kind = str(self.chain_combo.currentData() or "none")
-        action = ChainAction(kind, self.chain_value.text().strip(), self.chain_delete.isChecked())
+        value = self.chain_value.currentText().strip()
+        action = ChainAction(kind, value, self.chain_delete.isChecked())
         self._ctx.settings.chain_action = action.to_json()
         self._ctx.save_settings()
-        self._sync_chain_controls()
 
     def refresh_profiles(self) -> None:
         self.profile_combo.blockSignals(True)
@@ -644,6 +686,8 @@ class DownloadsPage(Page):
         self.cards[item_id] = card
         # Antes del hueco elástico del final.
         self._cards_layout.insertWidget(self._cards_layout.count() - 1, card)
+        if card.isVisible():
+            fade_in(card)
         self._refresh_actions()
 
     def _on_item_changed(self, item_id: int) -> None:
@@ -653,7 +697,7 @@ class DownloadsPage(Page):
             return
         if item.state not in STAGING:
             # Ha pasado a la cola: su tarjeta ya se ve en la página Cola.
-            self._on_item_removed(item_id)
+            self._on_item_removed(item_id, moved=True)
             self._set_feedback("downloads.sent_to_queue")
             return
         card.refresh()
@@ -661,12 +705,17 @@ class DownloadsPage(Page):
             self.thumbnails.request(item.info.thumbnail_url)
         self._refresh_actions()
 
-    def _on_item_removed(self, item_id: int) -> None:
+    def _on_item_removed(self, item_id: int, moved: bool = False) -> None:
+        """Quita la tarjeta: explotando si se borra, plegándose si pasa a la Cola."""
         card = self.cards.pop(item_id, None)
         if card is not None:
-            self._cards_layout.removeWidget(card)
-            card.deleteLater()
+            remove = fade_out_and_remove if moved else explode_and_remove
+            remove(card, partial(self._discard, card))
         self._refresh_actions()
+
+    def _discard(self, card: DownloadCard) -> None:
+        self._cards_layout.removeWidget(card)
+        card.deleteLater()
 
     def _on_thumbnail_loaded(self, url: str, path: str) -> None:
         for card in self.cards.values():

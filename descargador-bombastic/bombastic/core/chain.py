@@ -38,6 +38,23 @@ CHAIN_KINDS: tuple[str, ...] = (
 )
 
 
+#: Valores típicos de cada acción para el desplegable (se puede escribir otro).
+_SUGGESTIONS: dict[str, tuple[str, ...]] = {
+    "convert": fc.CONTAINERS,
+    "compress": ("8", "10", "25", "50", "100", "500"),
+    "normalize": ("-14", "-16", "-23"),
+    "extract_audio": tuple(ft.EXTRACT_FORMATS),
+    "resize": ("2160", "1440", "1080", "720", "480", "360"),
+}
+
+
+def chain_suggestions(kind: str, recipes: RecipeStore | None = None) -> list[str]:
+    """Opciones del desplegable de valor para una acción (las recetas, si es ``recipe``)."""
+    if kind == "recipe":
+        return [recipe.name for recipe in recipes.all()] if recipes is not None else []
+    return list(_SUGGESTIONS.get(kind, ()))
+
+
 @dataclass(frozen=True)
 class ChainAction:
     #: Uno de :data:`CHAIN_KINDS`.

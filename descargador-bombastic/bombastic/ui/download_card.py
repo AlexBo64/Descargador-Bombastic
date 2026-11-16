@@ -29,6 +29,7 @@ from bombastic.core.download_manager import (
 )
 from bombastic.core.formatting import format_bytes, format_duration, format_speed
 from bombastic.core.i18n import tr
+from bombastic.ui.effects import pulse
 
 THUMBNAIL_SIZE = QSize(160, 90)
 #: Acciones del menú "Más" de las tarjetas de la cola, en orden.
@@ -282,6 +283,10 @@ class DownloadCard(QFrame):
         """Pinta el estado actual del elemento."""
         item = self._item
         state = item.state
+        # Destello al cambiar de estado (no con cada avance del progreso).
+        if getattr(self, "_shown_state", state) is not state:
+            pulse(self.status_label)
+        self._shown_state = state
         self.title_label.set_full_text(item.info.title if item.info is not None else item.url)
         meta = meta_text(item)
         self.meta_label.set_full_text(meta)

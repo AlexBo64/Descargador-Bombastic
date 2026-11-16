@@ -209,6 +209,16 @@ QComboBox::down-arrow {
     height: 14px;
 }
 
+/* Desplegable editable sin opciones: se ve como una caja de texto, sin flecha */
+QComboBox[noOptions="true"]::drop-down {
+    width: 0;
+}
+
+QComboBox[noOptions="true"]::down-arrow {
+    image: none;
+    width: 0;
+}
+
 QComboBox QAbstractItemView, QMenu {
     background: {{popup}};
     border: 1px solid {{glass_border}};

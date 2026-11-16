@@ -86,6 +86,8 @@ Run "`"$Iscc`" /DAppVersion=$Version build\installer.iss"
 $Setup = Join-Path $Out "installer\DescargadorBombastic-Setup-$Version.exe"
 Sign $Setup
 Copy-Item $Setup $Release -Force
+# Copia con nombre fijo: el botón del README enlaza a releases/latest/download/<nombre fijo>.
+Copy-Item $Setup (Join-Path $Release "DescargadorBombastic-Setup.exe") -Force
 
 # 7b. Portable: la carpeta onedir + bin + portable.flag
 $Portable = Join-Path $Out "portable\DescargadorBombastic"
@@ -99,6 +101,7 @@ New-Item -ItemType File -Force "$Portable\portable.flag" | Out-Null
 $Zip = Join-Path $Release "DescargadorBombastic-Portable-$Version.zip"
 if (Test-Path $Zip) { Remove-Item $Zip }
 Compress-Archive -Path $Portable -DestinationPath $Zip
+Copy-Item $Zip (Join-Path $Release "DescargadorBombastic-Portable.zip") -Force
 
 Get-ChildItem $Release | ForEach-Object {
     $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()

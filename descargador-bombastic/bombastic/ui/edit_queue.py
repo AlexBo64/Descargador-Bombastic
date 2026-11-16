@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import contextlib
+from functools import partial
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QFrame,
@@ -23,6 +24,8 @@ from bombastic.core.edit_manager import EDIT_FINISHED, EditManager, EditState, E
 from bombastic.core.formatting import format_bytes
 from bombastic.core.i18n import tr
 from bombastic.ui.download_card import ElidedLabel
+from bombastic.ui.effects import explode_and_remove, pulse, sync_order
+from bombastic.ui.theme import fade_in
 
 _STEPS = 1000
 
@@ -126,6 +129,10 @@ class EditCard(QFrame):
 
     def refresh(self) -> None:
         task, state = self.task, self.task.state
+        # Destello al cambiar de estado (no con cada avance del progreso).
+        if getattr(self, "_shown_state", state) is not state:
+            pulse(self.status)
+        self._shown_state = state
         self.title.set_full_text(task.title)
         self.status.set_full_text(edit_status_text(task))
         is_error = state is EditState.FAILED
@@ -207,19 +214,21 @@ class EditQueueView(QWidget):
         if card is None:
             card = EditCard(self.manager, task)
             self.cards[task_id] = card
+            QTimer.singleShot(0, lambda c=card: c.isVisible() and fade_in(c))
         card.refresh()
-        for index, item in enumerate(self.manager.tasks(), start=1):
-            widget = self.cards.get(item.task_id)
-            if widget is not None and self._layout.indexOf(widget) != index:
-                self._layout.insertWidget(index, widget)
+        wanted = [self.cards[t.task_id] for t in self.manager.tasks() if t.task_id in self.cards]
+        sync_order(self._layout, wanted)
         self._refresh()
 
     def _drop(self, task_id: int) -> None:
         card = self.cards.pop(task_id, None)
         if card is not None:
-            self._layout.removeWidget(card)
-            card.deleteLater()
+            explode_and_remove(card, partial(self._discard, card))
         self._refresh()
+
+    def _discard(self, card: EditCard) -> None:
+        self._layout.removeWidget(card)
+        card.deleteLater()
 
     def _refresh(self) -> None:
         tasks = self.manager.tasks()

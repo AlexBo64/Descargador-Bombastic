@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from PySide6.QtCore import Qt
 from pytestqt.qtbot import QtBot
 
 from bombastic.context import AppContext
@@ -198,9 +199,35 @@ def test_profiles_and_chain_in_downloads_page(
     page = DownloadsPage(ctx, launcher=fake_launcher, profiles=profiles)
     qtbot.addWidget(page)
     page.preset_combo.setCurrentIndex(page.preset_combo.findData("mp3"))
+    page.chain_combo.setCurrentIndex(page.chain_combo.findData("convert"))
+    # Al elegir la acción se proponen sus valores típicos y se usa el primero.
+    options = [page.chain_value.itemText(i) for i in range(page.chain_value.count())]
+    assert options[:3] == ["mp4", "mkv", "webm"]
+    assert ChainAction.from_json(ctx.settings.chain_action) == ChainAction("convert", "mp4")
+    page.chain_value.setCurrentIndex(page.chain_value.findText("mkv"))
+    page.chain_value.activated.emit(page.chain_value.currentIndex())
+    assert ChainAction.from_json(ctx.settings.chain_action).value == "mkv"
+    assert page.chain_has_options() and page.chain_value.property("noOptions") is False
+    # Recortar y una receta sin recetas guardadas no tienen opciones: sin flecha ni lista.
+    for kind in ("trim", "recipe"):
+        page.chain_combo.setCurrentIndex(page.chain_combo.findData(kind))
+        assert not page.chain_has_options()
+        assert page.chain_value.property("noOptions") is True
+        # Alt+Abajo abre la lista desde Qt (sin pasar por Python): tampoco debe abrirse.
+        page.show()
+        page.chain_value.setFocus()
+        qtbot.keyClick(page.chain_value, Qt.Key.Key_Down, Qt.KeyboardModifier.AltModifier)
+        assert not page.chain_value.view().isVisible()
     page.chain_combo.setCurrentIndex(page.chain_combo.findData("extract_audio"))
-    page.chain_value.setText("wav")
-    page.chain_value.editingFinished.emit()
+    assert page.chain_value.findText("flac") >= 0
+    assert page.chain_value.property("noOptions") is False
+    # Con opciones, la misma tecla sí abre la lista (así el test de arriba prueba algo).
+    qtbot.keyClick(page.chain_value, Qt.Key.Key_Down, Qt.KeyboardModifier.AltModifier)
+    qtbot.waitUntil(page.chain_value.view().isVisible)
+    page.chain_value.hidePopup()
+    # También se puede escribir un valor a mano.
+    page.chain_value.setEditText("wav")
+    page.chain_value.lineEdit().editingFinished.emit()
     assert ChainAction.from_json(ctx.settings.chain_action) == ChainAction("extract_audio", "wav")
     saved = page.save_profile("Audio")
     assert saved.values["download_preset"] == "mp3"

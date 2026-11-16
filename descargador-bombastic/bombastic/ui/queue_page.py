@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import partial
+
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
@@ -21,7 +23,9 @@ from bombastic.core.i18n import tr
 from bombastic.core.thumbnails import ThumbnailLoader
 from bombastic.ui.download_card import DownloadCard, error_text, output_folder
 from bombastic.ui.edit_queue import EditQueueView
+from bombastic.ui.effects import explode_and_remove, sync_order
 from bombastic.ui.pages import Page
+from bombastic.ui.theme import fade_in
 
 
 class QueuePage(Page):
@@ -125,25 +129,33 @@ class QueuePage(Page):
             card.open_folder_requested.connect(self._open_folder)
             card.menu_requested.connect(self._on_menu)
             self.cards[item_id] = card
+            created = True
+        else:
+            created = False
             if item.info is not None and item.info.thumbnail_url:
                 self.thumbnails.request(item.info.thumbnail_url)
         card.refresh()
         self._place_cards()
+        if created and card.isVisible():
+            fade_in(card)
         self._refresh_actions()
 
     def _drop(self, item_id: int) -> None:
         card = self.cards.pop(item_id, None)
         if card is not None:
-            self._cards_layout.removeWidget(card)
-            card.deleteLater()
+            explode_and_remove(card, partial(self._discard, card))
         self._refresh_actions()
 
+    def _discard(self, card: DownloadCard) -> None:
+        self._cards_layout.removeWidget(card)
+        card.deleteLater()
+
     def _place_cards(self) -> None:
-        """Ordena las tarjetas como la cola (solo mueve las que están fuera de sitio)."""
-        for index, item in enumerate(self.manager.queue_items(), start=1):
-            card = self.cards.get(item.item_id)
-            if card is not None and self._cards_layout.indexOf(card) != index:
-                self._cards_layout.insertWidget(index, card)
+        """Ordena las tarjetas como la cola (solo si el orden ha cambiado)."""
+        wanted = [
+            self.cards[i.item_id] for i in self.manager.queue_items() if i.item_id in self.cards
+        ]
+        sync_order(self._cards_layout, wanted)
 
     def _on_thumbnail_loaded(self, url: str, path: str) -> None:
         for card in self.cards.values():

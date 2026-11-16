@@ -13,6 +13,15 @@
   deslizadores, menús y la navegación lateral).
 - Los spinbox y desplegables ya no cambian de valor al hacer scroll con el puntero encima:
   hay que pincharlos antes; mientras tanto, la rueda desplaza la página.
+- "Después de descargar": el valor de la acción es un desplegable con las opciones típicas
+  (contenedores, formatos de audio, resoluciones, tamaños en MB, objetivos LUFS o tus recetas)
+  en el que también se puede escribir otro valor; sin opciones (recortar) no muestra flecha.
+- Animaciones: al quitar una descarga o edición, su tarjeta se rompe en fragmentos que se
+  dispersan y el hueco se cierra suavemente; al pasar a la Cola se desvanece y se pliega; las
+  tarjetas nuevas aparecen con un fundido y la línea de estado destella al cambiar de estado.
+- README en la raíz del repositorio de GitHub con botón grande "Descargar para Windows",
+  capturas y la lista de funciones. Cada release incluye el instalador y el zip portable
+  también con nombre fijo (`DescargadorBombastic-Setup.exe`), al que enlaza el botón.
 - Corregido: las tarjetas de descarga y de edición se aplastaban (botones cortados) cuando la
   lista llenaba la pantalla.
 - Editor: los controles del reproductor y los botones de acción se reparten en dos filas para
