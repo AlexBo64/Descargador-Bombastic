@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 — Fase 5: Editor completo
+
+- Herramientas 6–13: resolución, recorte de imagen (campos numéricos), rotar y voltear;
+  velocidad sincronizada (`setpts` + `atempo` encadenado fuera de 0,5–2); audio (extraer,
+  quitar, sustituir pista, volumen en dB, fundidos, canales, frecuencia y `loudnorm` en dos
+  pasadas con objetivo LUFS); subtítulos (incrustar como pista, grabar con fuente y tamaño,
+  extraer); marca de agua de imagen o texto con posición, opacidad y tamaño; GIF con
+  `palettegen`/`paletteuse` y WebP animado; capturas (punto actual o cada N segundos);
+  metadatos y carátula de audio. La 14 (audio puro) son las mismas herramientas sobre un
+  archivo de audio: las que necesitan vídeo lo avisan.
+- "Previsualizar resultado": 10 s del resultado en una carpeta temporal, en un reproductor.
+- Si QtMultimedia no puede reproducir un archivo, se genera solo una copia H.264 480p para la
+  vista previa (las herramientas siguen usando el original).
+- Aceleración por hardware (NVENC, Quick Sync, AMF): detección con `ffmpeg -encoders` y una
+  prueba real de cada codificador; si una edición acelerada falla, se repite por CPU.
+- Escapado de dos niveles de las rutas y textos dentro de los filtros (subtítulos y textos con
+  `:`, `'` o tildes).
+
 ## 0.5.0 — Fase 4: Editor básico
 
 - Página **Editor**: abrir con el diálogo o arrastrando, panel de información con ffprobe

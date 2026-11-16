@@ -13,16 +13,18 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from PySide6.QtCore import QCoreApplication, QEvent
+from PySide6.QtCore import QCoreApplication, QEvent, QObject
 from PySide6.QtWidgets import QApplication
 
 from bombastic.context import AppContext
 from bombastic.core import i18n
 from bombastic.core.download_manager import DownloadManager
 from bombastic.core.edit_manager import EditManager
+from bombastic.core.hwaccel import HwProbe
+from bombastic.core.media_prober import MediaProber
 from bombastic.core.paths import AppPaths, resources_dir
 from bombastic.core.settings import SettingsStore
-from bombastic.core.ytdlp_runner import Launch, Launcher
+from bombastic.core.ytdlp_runner import CatalogRefresher, Launch, Launcher
 from bombastic.ui.theme import ThemeManager
 
 
@@ -74,13 +76,13 @@ def ctx(qapp: QApplication, paths: AppPaths, translator: i18n.Translator) -> Ite
 
 @pytest.fixture(autouse=True)
 def _dispose_managers(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Cierra y borra con Qt los gestores (descargas y ediciones) sin padre creados en cada test.
+    """Cierra y borra con Qt los gestores y sondas sin padre creados en cada test.
 
     Si se dejara que el recolector de Python los destruyera (en cualquier momento de un test
     posterior), Qt podría abortar. En la app el gestor cuelga de una página y vive toda la sesión.
     """
-    created: list[DownloadManager | EditManager] = []
-    for cls in (DownloadManager, EditManager):
+    created: list[QObject] = []
+    for cls in (DownloadManager, EditManager, HwProbe, CatalogRefresher, MediaProber):
         original = cls.__init__
 
         def init(self: Any, *args: Any, _original: Any = original, **kwargs: Any) -> None:
@@ -90,7 +92,9 @@ def _dispose_managers(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
         monkeypatch.setattr(cls, "__init__", init)
     yield
-    for manager in created:
-        manager.shutdown()
-        manager.deleteLater()
+    for obj in created:
+        shutdown = getattr(obj, "shutdown", None)
+        if shutdown is not None:
+            shutdown()
+        obj.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)

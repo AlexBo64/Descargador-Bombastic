@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -21,8 +24,9 @@ from PySide6.QtWidgets import (
 
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool
-from bombastic.core.edit_manager import EditManager
+from bombastic.core.edit_manager import EditManager, FfmpegJob
 from bombastic.core.ffmpeg_command import EditPlan
+from bombastic.core.ffmpeg_tools import apply_hw, build_proxy, preview_plan
 from bombastic.core.formatting import format_bytes, format_timecode
 from bombastic.core.i18n import tr
 from bombastic.core.media_probe import ProbeInfo
@@ -37,6 +41,16 @@ from bombastic.ui.editor_tools import (
     ToolError,
     ToolForm,
     TrimForm,
+)
+from bombastic.ui.editor_tools_extra import (
+    AnimationForm,
+    AudioForm,
+    MetadataForm,
+    SnapshotForm,
+    SpeedForm,
+    SubtitlesForm,
+    TransformForm,
+    WatermarkForm,
 )
 from bombastic.ui.pages import Page
 from bombastic.ui.player import PlayerWidget
@@ -71,9 +85,28 @@ def probe_summary(probe: ProbeInfo) -> str:
     return "\n".join(lines)
 
 
+class PreviewDialog(QDialog):
+    """Reproduce la previsualización del resultado."""
+
+    def __init__(self, path: Path, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("editor.preview"))
+        self.resize(720, 480)
+        self.player = PlayerWidget()
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.player)
+        self.player.load(path)
+        self.player.player.play()
+        self.finished.connect(lambda _result: self.player.unload())
+
+
 class EditorPage(Page):
     #: Se ha abierto un archivo con éxito (ruta).
     file_opened = Signal(str)
+    #: La previsualización está lista (ruta del clip).
+    preview_ready = Signal(str)
+    #: Los tests lo desactivan para no abrir el diálogo de reproducción.
+    show_preview_dialog = True
 
     def __init__(
         self,
@@ -111,17 +144,31 @@ class EditorPage(Page):
             SegmentsForm(),
             ConcatForm(),
             CompressForm(),
+            TransformForm(),
+            SpeedForm(),
+            AudioForm(),
+            SubtitlesForm(),
+            WatermarkForm(),
+            AnimationForm(),
+            SnapshotForm(),
+            MetadataForm(),
         ]
         self.tools = QTabWidget()
+        self.tools.setUsesScrollButtons(True)
         for form in self.forms:
             self.tools.addTab(form, "")
         self.command_button = QPushButton()
+        self.preview_button = QPushButton()
+        #: Trabajo de previsualización o de proxy en marcha (no pasa por la cola).
+        self._side_job: FfmpegJob | None = None
+        self._proxy_for: Path | None = None
         self.queue_button = QPushButton()
         self.queue_button.setProperty("primary", True)
         self.feedback = QLabel()
         self.feedback.setWordWrap(True)
         actions = QHBoxLayout()
         actions.addWidget(self.feedback, 1)
+        actions.addWidget(self.preview_button)
         actions.addWidget(self.command_button)
         actions.addWidget(self.queue_button)
 
@@ -146,6 +193,8 @@ class EditorPage(Page):
 
         self.open_button.clicked.connect(self._browse)
         self.command_button.clicked.connect(self.show_command)
+        self.preview_button.clicked.connect(self.preview)
+        self.player.playback_failed.connect(self._on_playback_failed)
         self.queue_button.clicked.connect(self.add_to_queue)
         self.prober.probed.connect(self._on_probed)
         self.prober.failed.connect(self._on_probe_failed)
@@ -188,6 +237,8 @@ class EditorPage(Page):
             self.tools.setTabText(index, tr(f"editor.tool.{form.key}"))
             form.retranslate()
         self.command_button.setText(tr("editor.show_command"))
+        self.preview_button.setText(tr("editor.preview"))
+        self.preview_button.setToolTip(tr("editor.preview.tooltip"))
         self.queue_button.setText(tr("editor.add_to_queue"))
         self.player.retranslate()
         self._refresh()
@@ -250,6 +301,7 @@ class EditorPage(Page):
             self.file_label.setText(tr("editor.no_file"))
         ready = self.source is not None and self.probe is not None
         self.command_button.setEnabled(ready)
+        self.preview_button.setEnabled(ready and self._side_job is None)
         self.queue_button.setEnabled(ready)
 
     # ------------------------------------------------------------------ acciones
@@ -265,6 +317,7 @@ class EditorPage(Page):
             marker_in=self.player.marker_in,
             marker_out=self.player.marker_out,
             temp_dir=self._ctx.paths.cache_dir / "tmp",
+            position=self.player.position,
         )
         try:
             plan = form.plan(context)
@@ -290,9 +343,83 @@ class EditorPage(Page):
         if plan is None:
             return None
         title = tr(f"editor.tool.{plan.tool}") + f": {plan.output.name}"
+        if self._ctx.settings.hw_encoder:
+            plan = apply_hw(plan, self._ctx.settings.hw_encoder)
         task_id = self.manager.add(title, plan)
         self.feedback.setText(tr("editor.queued", name=plan.output.name))
         return task_id
 
+    # -------------------------------------------------- previsualización y proxy
+
+    def _run_side(self, plan: EditPlan, done: Callable[[str], None]) -> FfmpegJob:
+        """Ejecuta un plan corto fuera de la cola (previsualización o proxy)."""
+        job = FfmpegJob(plan, self.manager.launcher, parent=self)
+        self._side_job = job
+
+        def finished(status: str, _code: str, _detail: str) -> None:
+            self._side_job = None
+            job.deleteLater()
+            self._refresh()
+            done(status)
+
+        job.finished.connect(finished)
+        job.start()
+        self._refresh()
+        return job
+
+    def preview(self) -> FfmpegJob | None:
+        """Genera unos segundos del resultado en una carpeta temporal y los reproduce."""
+        plan = self.current_plan()
+        if plan is None:
+            return None
+        marker = self.player.marker_in
+        start = marker if marker is not None else self.player.position
+        suffix = plan.output.suffix or ".mp4"
+        target = self._ctx.paths.cache_dir / "tmp" / f"preview{suffix}"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        short = preview_plan(plan, start, target)
+        if short is None:
+            self.feedback.setText(tr("editor.preview.unavailable"))
+            return None
+        self.feedback.setText(tr("editor.preview.working"))
+
+        def done(status: str) -> None:
+            if status == "completed":
+                self.feedback.setText("")
+                self.preview_ready.emit(str(target))
+                if self.show_preview_dialog:
+                    PreviewDialog(target, parent=self).open()
+            else:
+                self.feedback.setText(tr("editor.preview.failed"))
+
+        return self._run_side(short, done)
+
+    def _on_playback_failed(self, _message: str) -> None:
+        """QtMultimedia no puede con el archivo: se reproduce una copia ligera en H.264."""
+        source, probe = self.source, self.probe
+        if source is None or probe is None or self._proxy_for == source or self._side_job:
+            return
+        self._proxy_for = source
+        digest = hashlib.sha1(str(source).encode("utf-8")).hexdigest()[:16]
+        proxy = self._ctx.paths.cache_dir / "proxies" / f"{digest}.mp4"
+        if proxy.is_file():
+            self.player.load(proxy, self.player.fps)
+            self.feedback.setText(tr("editor.proxy.ready"))
+            return
+        proxy.parent.mkdir(parents=True, exist_ok=True)
+        self.feedback.setText(tr("editor.proxy.working"))
+
+        def done(status: str) -> None:
+            if status == "completed" and self.source == source:
+                self.player.load(proxy, self.player.fps)
+                self.feedback.setText(tr("editor.proxy.ready"))
+            elif status != "completed":
+                self.feedback.setText(tr("editor.proxy.failed"))
+
+        self._run_side(build_proxy(source, proxy, probe), done)
+
     def shutdown(self) -> None:
+        if self._side_job is not None:
+            self._side_job.cancel()
+            self._side_job.wait(3000)
         self.player.unload()

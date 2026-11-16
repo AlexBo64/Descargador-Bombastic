@@ -78,6 +78,10 @@ class EditPlan:
     inputs: tuple[Path, ...] = ()
     #: Archivos temporales que se borran al terminar (lista de concat, logs de 2 pasadas).
     temp_files: tuple[Path, ...] = field(default_factory=tuple)
+    #: Análisis de la primera pasada que rellena las siguientes (``loudnorm``) o vacío.
+    analysis: str = ""
+    #: Pasadas por CPU si las de aceleración por hardware fallan; vacío si no hay alternativa.
+    cpu_fallback: tuple[tuple[str, ...], ...] = ()
 
 
 def _ts(seconds: float) -> str:

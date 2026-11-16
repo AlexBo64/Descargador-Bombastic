@@ -62,5 +62,9 @@ Una fase no está terminada hasta que `ruff check .`, `ruff format --check .`, `
   En los tests, `conftest.py` cierra y borra con Qt los `DownloadManager` sin padre al acabar
   cada test; no dejar que los recolecte Python.
 - Para ver los mensajes de Qt en Windows: `QT_FORCE_STDERR_LOGGING=1`.
+- Valores dentro de filtros de ffmpeg (rutas, textos): siempre con
+  `ffmpeg_tools.escape_filter_value` (dos niveles de escapado).
+- Que un codificador por hardware aparezca en `ffmpeg -encoders` no significa que funcione:
+  hay que probarlo (`HwProbe`).
 - No cambiar `LOCALAPPDATA` al lanzar `python` del gestor de instalaciones de Windows: cree que
   no hay Python e instala uno. Usa la ruta completa del intérprete.

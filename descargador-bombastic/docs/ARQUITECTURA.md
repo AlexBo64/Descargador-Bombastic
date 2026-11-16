@@ -90,6 +90,22 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - Las listas del demuxer concat y los logs de dos pasadas van a `cache\tmp` y se borran al
   terminar.
 
+## Editor completo (Fase 5)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/ffmpeg_tools.py` | Herramientas 6–13, previsualización, proxy, escapado de filtros y `apply_hw` |
+| `core/hwaccel.py` | `HwProbe`: `-encoders` y prueba real de cada codificador por hardware |
+| `ui/editor_tools_extra.py` | Formularios de las herramientas 6–13 |
+
+- `EditPlan.analysis = "loudnorm"`: `FfmpegJob` lee el JSON de la primera pasada y rellena el
+  marcador `{loudnorm}` de la segunda.
+- `EditPlan.cpu_fallback`: pasadas por CPU; si las aceleradas fallan, el gestor las cambia y
+  vuelve a encolar la tarea sin intervención.
+- El recorte de imagen se hace con campos numéricos en lugar de dibujar sobre el vídeo:
+  `QVideoWidget` es una superficie nativa sobre la que pintar es frágil; la previsualización
+  sirve para comprobarlo.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

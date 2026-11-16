@@ -48,6 +48,8 @@ class ToolContext:
     marker_out: float | None
     #: Carpeta para archivos temporales (lista de concat, logs de dos pasadas).
     temp_dir: Path
+    #: Punto actual del reproductor, en segundos.
+    position: float = 0.0
 
 
 def _combo(values: tuple[str, ...], prefix: str, current: str) -> QComboBox:

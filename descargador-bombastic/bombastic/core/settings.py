@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 
+from bombastic.core.ffmpeg_tools import HW_ENCODERS
 from bombastic.core.ytdlp_command import (
     COOKIE_BROWSERS,
     COOKIE_MODES,
@@ -59,6 +60,10 @@ class Settings:
     auto_retries: int = 2
     #: Ediciones simultáneas (recodificar ya usa mucha CPU).
     max_concurrent_edits: int = 1
+    #: Aceleración por hardware del editor (``nvenc``, ``qsv``, ``amf``) o vacío = CPU.
+    hw_encoder: str = ""
+    #: Aceleraciones que funcionaron en la última detección.
+    hw_available: list[str] = dataclasses.field(default_factory=list)
     #: Límite global de velocidad para yt-dlp (``500K``, ``2M``…); vacío = sin límite.
     rate_limit: str = ""
     #: Modo avanzado: valor de cada opción de yt-dlp por su flag (``True`` o un texto).
@@ -95,6 +100,9 @@ class Settings:
         self.max_concurrent = max(1, min(self.max_concurrent, 8))
         self.auto_retries = max(0, min(self.auto_retries, 10))
         self.max_concurrent_edits = max(1, min(self.max_concurrent_edits, 4))
+        self.hw_available = [hw for hw in self.hw_available if hw in HW_ENCODERS]
+        if self.hw_encoder not in self.hw_available:
+            self.hw_encoder = ""
         if not is_valid_rate(self.rate_limit):
             self.rate_limit = defaults.rate_limit
         self.window_width = max(MIN_WINDOW_WIDTH, min(self.window_width, 10_000))

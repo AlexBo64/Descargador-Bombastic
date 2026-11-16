@@ -8,6 +8,10 @@ no, como ffmpeg. Palabras en los nombres de archivo:
 - ``big``: (ffprobe) vídeo de 1920x1080 en vez de 640x360.
 - ``fail``: (ffmpeg) la salida falla tras escribir parte del archivo.
 - ``slow``: (ffmpeg) la entrada no termina nunca (para cancelar).
+
+Además: ``-encoders`` lista NVENC y QSV; codificar con ``h264_qsv`` o ``h264_nvenc`` falla
+(para probar la detección y la vuelta a CPU); ``print_format=json`` escribe las medidas
+de loudnorm en stderr como el ffmpeg real.
 """
 
 from __future__ import annotations
@@ -65,7 +69,34 @@ def probe(path: str) -> int:
     return 0
 
 
+ENCODERS = """Encoders:
+ V..... = Video
+ ------
+ V....D libx264              libx264 H.264 / AVC
+ V....D h264_nvenc           NVIDIA NVENC H.264 encoder (codec h264)
+ V..... h264_qsv             H.264 (Intel Quick Sync Video acceleration) (codec h264)
+ A....D aac                  AAC (Advanced Audio Coding)"""
+
+LOUDNORM = """{
+	"input_i" : "-21.75",
+	"input_tp" : "-18.06",
+	"input_lra" : "0.00",
+	"input_thresh" : "-31.75",
+	"output_i" : "-15.95",
+	"target_offset" : "-0.05"
+}"""
+
+
 def ffmpeg(args: list[str]) -> int:
+    if "-encoders" in args:
+        out(ENCODERS)
+        return 0
+    if "h264_qsv" in args or ("h264_nvenc" in args and "-cq" in args):
+        out("Cannot load the hardware encoder", "stderr")
+        return 1
+    if any("print_format=json" in a for a in args):
+        out("[Parsed_loudnorm_0 @ 0000] ", "stderr")
+        out(LOUDNORM, "stderr")
     output = args[-1]
     inputs = [args[i + 1] for i, a in enumerate(args) if a == "-i"]
     slow = any("slow" in Path(i).name for i in inputs)

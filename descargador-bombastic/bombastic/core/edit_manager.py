@@ -10,7 +10,7 @@ import json
 import logging
 from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -20,6 +20,7 @@ from PySide6.QtCore import QObject, QProcess, Signal
 from bombastic.core.db import Database, now_iso
 from bombastic.core.ffmpeg_command import EditPlan
 from bombastic.core.ffmpeg_progress import FfmpegProgressParser
+from bombastic.core.ffmpeg_tools import fill_analysis
 from bombastic.core.output_paths import enough_space
 from bombastic.core.process_control import kill_process_tree
 from bombastic.core.ytdlp_runner import Launcher, describe
@@ -34,6 +35,7 @@ ERROR_FFMPEG = "ffmpeg"  # ffmpeg ha fallado: el detalle es su último mensaje
 ERROR_MISSING = "ffmpeg_missing"
 ERROR_NO_SPACE = "no_space"
 ERROR_START_FAILED = "start_failed"
+ERROR_ANALYSIS = "analysis"  # la primera pasada no ha dado las medidas esperadas
 
 
 class EditState(StrEnum):
@@ -76,6 +78,8 @@ def plan_to_dict(plan: EditPlan) -> dict[str, Any]:
         "duration": plan.duration,
         "inputs": [str(p) for p in plan.inputs],
         "temp_files": [str(p) for p in plan.temp_files],
+        "analysis": plan.analysis,
+        "cpu_fallback": [list(p) for p in plan.cpu_fallback],
     }
 
 
@@ -89,6 +93,8 @@ def plan_from_dict(data: Any) -> EditPlan | None:
             duration=float(duration) if isinstance(duration, (int, float)) else None,
             inputs=tuple(Path(p) for p in data.get("inputs", [])),
             temp_files=tuple(Path(p) for p in data.get("temp_files", [])),
+            analysis=str(data.get("analysis", "")),
+            cpu_fallback=tuple(tuple(str(a) for a in p) for p in data.get("cpu_fallback", [])),
         )
     except (AttributeError, KeyError, TypeError, ValueError):
         return None
@@ -113,6 +119,9 @@ class FfmpegJob(QObject):
         super().__init__(parent)
         self._plan = plan
         self._launcher = launcher
+        #: Pasadas pendientes de ejecutar (las siguientes pueden rellenarse con el análisis).
+        self._passes = [list(p) for p in plan.passes]
+        self._pass_log: list[str] = []
         self._pass = 0
         self._cancelled = False
         self._done = False
@@ -129,10 +138,18 @@ class FfmpegJob(QObject):
         )
 
     def start(self) -> None:
+        if self._plan.tool == "snapshot" and not self._plan.output.suffix:
+            # Capturas cada N segundos: la salida es una carpeta que ffmpeg no crea.
+            try:
+                self._plan.output.mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                self._finish("failed", ERROR_FFMPEG, str(exc))
+                return
         self._start_pass()
 
     def _start_pass(self) -> None:
-        launch = self._launcher(list(self._plan.passes[self._pass]))
+        launch = self._launcher(self._passes[self._pass])
+        self._pass_log = []
         if launch is None:
             self._finish("failed", ERROR_MISSING, "")
             return
@@ -181,7 +198,9 @@ class FfmpegJob(QObject):
         assert self._process is not None
         self._stderr += bytes(self._process.readAllStandardError().data())
         lines, self._stderr = self._lines(self._stderr)
-        self.log_lines.extend(line for line in lines if line.strip())
+        kept = [line for line in lines if line.strip()]
+        self.log_lines.extend(kept)
+        self._pass_log.extend(kept)
 
     def _on_error(self, error: QProcess.ProcessError) -> None:
         if error == QProcess.ProcessError.FailedToStart:
@@ -191,14 +210,24 @@ class FfmpegJob(QObject):
         self._read_stdout()
         self._read_stderr()
         if self._stderr.strip():
-            self.log_lines.append(self._stderr.decode("utf-8", errors="replace").strip())
+            rest = self._stderr.decode("utf-8", errors="replace").strip()
+            self.log_lines.append(rest)
+            self._pass_log.append(rest)
             self._stderr = b""
         if self._cancelled:
             self._finish("cancelled", "", "")
         elif exit_code != 0 or status != QProcess.ExitStatus.NormalExit:
             detail = self.log_lines[-1] if self.log_lines else str(exit_code)
             self._finish("failed", ERROR_FFMPEG, detail)
-        elif self._pass + 1 < len(self._plan.passes):
+        elif self._pass + 1 < len(self._passes):
+            if self._pass == 0 and self._plan.analysis:
+                filled = fill_analysis(
+                    self._passes[1:], self._plan.analysis, "\n".join(self._pass_log)
+                )
+                if filled is None:
+                    self._finish("failed", ERROR_ANALYSIS, self._plan.analysis)
+                    return
+                self._passes[1:] = filled
             self._pass += 1
             self._start_pass()
         else:
@@ -248,6 +277,10 @@ class EditManager(QObject):
             self._next_id = int(row["top"] or 0) + 1
 
     # ------------------------------------------------------------------ consulta
+
+    @property
+    def launcher(self) -> Launcher:
+        return self._launcher
 
     def tasks(self) -> list[EditTask]:
         return sorted(self._tasks.values(), key=lambda task: task.position)
@@ -425,6 +458,12 @@ class EditManager(QObject):
                 task.state, task.fraction = EditState.COMPLETED, 1.0
             elif status == "cancelled":
                 task.state = EditState.PAUSED if pausing else EditState.CANCELLED
+            elif task.plan.cpu_fallback:
+                # La aceleración por hardware ha fallado: se repite por CPU sin preguntar.
+                log.warning("Hardware encoding failed for %s; retrying on CPU", task.title)
+                task.plan = replace(task.plan, passes=task.plan.cpu_fallback, cpu_fallback=())
+                task.state = EditState.QUEUED
+                task.error_code = task.error_detail = ""
             else:
                 task.state = EditState.FAILED
             self._changed(task)
@@ -448,6 +487,7 @@ class EditManager(QObject):
             VALUES (:id, :title, :position, :state, :plan, :error_code, :error_detail, :log,
                 :created_at, :updated_at)
             ON CONFLICT(id) DO UPDATE SET position = excluded.position, state = excluded.state,
+                plan = excluded.plan,
                 error_code = excluded.error_code, error_detail = excluded.error_detail,
                 log = excluded.log, updated_at = excluded.updated_at
             """,

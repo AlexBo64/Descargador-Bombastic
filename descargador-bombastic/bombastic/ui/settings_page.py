@@ -26,7 +26,9 @@ from PySide6.QtWidgets import (
 from bombastic.context import AppContext
 from bombastic.core.binaries import BinaryStatus, Tool, locate_all
 from bombastic.core.binary_probe import BinaryProbe
+from bombastic.core.hwaccel import HwProbe
 from bombastic.core.i18n import tr
+from bombastic.core.media_prober import tool_launcher
 from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
 from bombastic.core.ytdlp_runner import CatalogRefresher, default_launcher
 from bombastic.ui.pages import Page
@@ -98,6 +100,23 @@ class SettingsPage(Page):
             label.setBuddy(widget)
             form.addRow(label, widget)
         column.addWidget(self.downloads_box)
+
+        # --- Editor: aceleración por hardware ---
+        self.editor_box = QGroupBox()
+        editor_form = QFormLayout(self.editor_box)
+        self.hw_label = QLabel()
+        self.hw_combo = QComboBox()
+        self.hw_combo.setObjectName("HwCombo")
+        self.hw_detect_button = QPushButton()
+        self.hw_status = QLabel()
+        self.hw_status.setProperty("muted", True)
+        self.hw_status.setWordWrap(True)
+        hw_row = QHBoxLayout()
+        hw_row.addWidget(self.hw_combo, 1)
+        hw_row.addWidget(self.hw_detect_button)
+        editor_form.addRow(self.hw_label, hw_row)
+        editor_form.addRow(self.hw_status)
+        column.addWidget(self.editor_box)
 
         # --- Dependencias ---
         self.dependencies_box = QGroupBox()
@@ -180,6 +199,8 @@ class SettingsPage(Page):
         self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
         self.catalog_button.clicked.connect(self.refresh_catalog)
+        self.hw_detect_button.clicked.connect(self.detect_hw)
+        self.hw_combo.currentIndexChanged.connect(self._on_hw_changed)
         self.open_bin_button.clicked.connect(lambda: self._open_folder(ctx.paths.bin_dir))
         self.open_logs_button.clicked.connect(lambda: self._open_folder(ctx.paths.logs_dir))
 
@@ -207,6 +228,13 @@ class SettingsPage(Page):
         self.edits_label.setText(tr("settings.max_concurrent_edits"))
         self.rate_edit.setPlaceholderText(tr("settings.rate_limit.placeholder"))
         self.rate_edit.setToolTip(tr("settings.rate_limit.tooltip"))
+
+        self.editor_box.setTitle(tr("settings.editor"))
+        self.hw_label.setText(tr("settings.hw"))
+        self.hw_detect_button.setText(tr("settings.hw.detect"))
+        self._fill_hw()
+        if not self.hw_status.text():
+            self.hw_status.setText(tr("settings.hw.hint"))
 
         self.dependencies_box.setTitle(tr("settings.dependencies"))
         self.dependencies_hint.setText(tr("settings.dependencies.hint"))
@@ -295,6 +323,46 @@ class SettingsPage(Page):
     def _open_folder(folder: Path) -> None:
         folder.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
+    # ------------------------------------------------------------------- hardware
+
+    def _fill_hw(self) -> None:
+        settings = self._ctx.settings
+        self.hw_combo.blockSignals(True)
+        self.hw_combo.clear()
+        self.hw_combo.addItem(tr("settings.hw.off"), "")
+        for hw in settings.hw_available:
+            self.hw_combo.addItem(tr(f"settings.hw.{hw}"), hw)
+        self.hw_combo.setCurrentIndex(max(0, self.hw_combo.findData(settings.hw_encoder)))
+        self.hw_combo.blockSignals(False)
+
+    def _on_hw_changed(self) -> None:
+        self._ctx.settings.hw_encoder = str(self.hw_combo.currentData() or "")
+        self._ctx.save_settings()
+
+    def detect_hw(self) -> HwProbe:
+        """Busca la aceleración por hardware disponible sin bloquear la interfaz."""
+        self.hw_detect_button.setEnabled(False)
+        self.hw_status.setText(tr("settings.hw.detecting"))
+        probe = HwProbe(tool_launcher(self._ctx.paths, Tool.FFMPEG), parent=self)
+
+        def done(working: list[str]) -> None:
+            settings = self._ctx.settings
+            settings.hw_available = working
+            if settings.hw_encoder not in working:
+                settings.hw_encoder = ""
+            self._ctx.save_settings()
+            self._fill_hw()
+            self.hw_detect_button.setEnabled(True)
+            names = ", ".join(tr(f"settings.hw.{hw}") for hw in working)
+            self.hw_status.setText(
+                tr("settings.hw.found", names=names) if working else tr("settings.hw.none")
+            )
+            probe.deleteLater()
+
+        probe.finished.connect(done)
+        probe.start()
+        return probe
 
     # -------------------------------------------------------------- dependencias
 

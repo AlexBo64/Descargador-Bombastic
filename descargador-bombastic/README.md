@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 4 (Editor básico).** Editor con reproductor, marcadores I/O y las
+> **Estado: Fase 5 (Editor completo).** Las 14 herramientas del editor, previsualización del
+> resultado, copia ligera para formatos que el reproductor no abre y aceleración por hardware.
+>
+> **Fase 4 (Editor básico):** Editor con reproductor, marcadores I/O y las
 > herramientas convertir, recortar, varios tramos, unir y comprimir, con cola de edición.
 >
 > **Fase 3 (Modo avanzado de yt-dlp):** Además de lo anterior, todas las opciones
@@ -54,6 +57,13 @@ Qué comprobar:
 13. Elige una herramienta (Convertir, Recortar, Fragmentos, Unir, Comprimir), pulsa "Ver
     comando" para ver el ffmpeg exacto y "Añadir a la cola de edición". El progreso se ve en
     **Cola → Ediciones**. El original nunca se sobrescribe: se crea `nombre_editado.ext`.
+14. Herramientas nuevas: Imagen (resolución, recorte, rotar, voltear), Velocidad, Audio
+    (extraer, quitar, sustituir, volumen, fundidos, canales, frecuencia y normalizar en dos
+    pasadas), Subtítulos (incrustar, grabar en la imagen, extraer), Marca de agua (imagen o
+    texto), GIF/WebP, Capturas y Metadatos (con carátula en audio).
+15. "Previsualizar resultado" genera 10 s del resultado y los reproduce.
+16. **Ajustes → Editor → Aceleración por hardware → Detectar** prueba NVENC, Quick Sync y AMF;
+    si una edición acelerada falla, se repite sola por CPU.
 
 ### Modo portable
 
@@ -104,7 +114,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 2 | Cola | Hecha |
 | 3 | Modo avanzado de yt-dlp | Hecha |
 | 4 | Editor básico | Hecha |
-| 5 | Editor completo | Pendiente |
+| 5 | Editor completo | Hecha |
 | 6 | Modo experto y recetas | Pendiente |
 | 7 | Perfiles, historial y encadenado | Pendiente |
 | 8 | Actualizaciones | Pendiente |
