@@ -91,6 +91,11 @@ def ffmpeg(args: list[str]) -> int:
     if "-encoders" in args:
         out(ENCODERS)
         return 0
+    if "-filters" in args:
+        out("Filters:\n  T.. = Timeline support\n  ------")
+        out(" TS scale             V->V       Scale the input video size.")
+        out(" .. atempo            A->A       Adjust audio tempo.")
+        return 0
     if "h264_qsv" in args or ("h264_nvenc" in args and "-cq" in args):
         out("Cannot load the hardware encoder", "stderr")
         return 1

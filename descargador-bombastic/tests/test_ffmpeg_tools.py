@@ -144,9 +144,14 @@ def test_animation_snapshots_metadata() -> None:
     assert "fps=1/5" in every.passes[0]
     meta = ft.build_metadata(SRC, Path("o.mp3"), AUDIO_ONLY, {"title": "T ñ"}, Path("c.jpg"))
     args = meta.passes[0]
-    assert args[
-        C + 4 : C + 10
-    ] == ("-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic")
+    assert args[C + 4 : C + 10] == (
+        "-map",
+        "0:a",
+        "-map",
+        "1:v",
+        "-disposition:v:0",
+        "attached_pic",
+    )
     assert "title=T ñ" in args and args[-3:] == ("-id3v2_version", "3", "o.mp3")
 
 
@@ -179,9 +184,14 @@ def test_hardware_acceleration() -> None:
     assert args[args.index("-cq") + 1] == "26" and "-crf" not in args and "-preset" not in args
     assert nvenc.cpu_fallback == plan.passes
     amf = ft.apply_hw(plan, "amf").passes[0]
-    assert amf[
-        amf.index("-rc") : amf.index("-rc") + 6
-    ] == ("-rc", "cqp", "-qp_i", "26", "-qp_p", "26")
+    assert amf[amf.index("-rc") : amf.index("-rc") + 6] == (
+        "-rc",
+        "cqp",
+        "-qp_i",
+        "26",
+        "-qp_p",
+        "26",
+    )
     two = fc.build_compress_size(SRC, OUT, PROBE, 5, Path("log"))
     assert ft.apply_hw(two, "nvenc") is two
     copy = fc.build_convert(SRC, OUT, PROBE, fc.ConvertOptions("mkv", "copy", "copy"))
@@ -257,7 +267,7 @@ def test_editor_has_all_tools_and_preview(
     page = EditorPage(ctx, manager, probe_launcher=fake_ffmpeg)
     page.show_preview_dialog = False
     qtbot.addWidget(page)
-    assert page.tools.count() == 13
+    assert page.tools.count() == 14
     source = _src(tmp_path, "vid.mp4")
     with qtbot.waitSignal(page.file_opened, timeout=TIMEOUT):
         page.open_file(source)

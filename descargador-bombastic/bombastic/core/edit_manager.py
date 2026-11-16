@@ -114,6 +114,8 @@ class FfmpegJob(QObject):
     progress = Signal(object, object)
     #: ``(estado final, código de error, detalle)``: ``completed``, ``failed`` o ``cancelled``.
     finished = Signal(str, str, str)
+    #: Cada línea de la salida de error de ffmpeg (consola del modo experto).
+    output_line = Signal(str)
 
     def __init__(self, plan: EditPlan, launcher: Launcher, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -201,6 +203,8 @@ class FfmpegJob(QObject):
         kept = [line for line in lines if line.strip()]
         self.log_lines.extend(kept)
         self._pass_log.extend(kept)
+        for line in kept:
+            self.output_line.emit(line)
 
     def _on_error(self, error: QProcess.ProcessError) -> None:
         if error == QProcess.ProcessError.FailedToStart:

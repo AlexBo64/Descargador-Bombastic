@@ -106,6 +106,17 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
   `QVideoWidget` es una superficie nativa sobre la que pintar es frágil; la previsualización
   sirve para comprobarlo.
 
+## Modo experto y recetas (Fase 6)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/recipes.py` | Variables, plantillas → `EditPlan`, recetas en SQLite, parser de `-filters` |
+| `ui/expert_panel.py` | Editor con resaltado y autocompletado, filtros, guardar receta, consola |
+| `ui/library_page.py` | Página "Perfiles y recetas" (recetas; perfiles en la Fase 7) |
+
+- El modo experto quita del comando `-y`, `-progress`, `-nostats`… y pone los suyos para
+  poder mostrar el progreso.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

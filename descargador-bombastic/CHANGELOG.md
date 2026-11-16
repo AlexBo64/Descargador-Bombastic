@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0 — Fase 6: Modo experto y recetas
+
+- Pestaña **Experto** del editor: comando de ffmpeg con resaltado básico (opciones,
+  variables y comillas), autocompletado de opciones comunes, variables y filtros, y variables
+  `{input}`, `{inputs[1]}`, `{output}`, `{start}`, `{end}`, `{dir}`, `{name}` más parámetros
+  propios. El texto se separa en argumentos antes de sustituir: una ruta con espacios sigue
+  siendo un solo argumento.
+- Lista de filtros de `ffmpeg -filters` con buscador; el elegido se inserta en el comando.
+- Ejecución inmediata con consola de salida en vivo y cancelar, o a la cola de edición.
+- "Abrir en modo experto" desde cualquier herramienta visual.
+- Recetas guardadas en SQLite (nombre, descripción, parámetros, extensión de salida, favorita)
+  y página **Perfiles y recetas** con abrir, renombrar, duplicar, favorita, eliminar, exportar
+  e importar en JSON.
+
 ## 0.6.0 — Fase 5: Editor completo
 
 - Herramientas 6–13: resolución, recorte de imagen (campos numéricos), rotar y voltear;

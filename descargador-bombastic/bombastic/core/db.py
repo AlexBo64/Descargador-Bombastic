@@ -54,6 +54,19 @@ MIGRATIONS: tuple[str, ...] = (
         updated_at TEXT NOT NULL
     );
     """,
+    # 3 — Fase 6: recetas del modo experto.
+    """
+    CREATE TABLE recipes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        description TEXT NOT NULL DEFAULT '',
+        command TEXT NOT NULL,
+        params TEXT NOT NULL DEFAULT '{}',
+        output_ext TEXT NOT NULL DEFAULT 'mp4',
+        favorite INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

@@ -23,16 +23,18 @@ from bombastic.core.binaries import Tool
 from bombastic.core.edit_manager import EditManager
 from bombastic.core.i18n import tr
 from bombastic.core.media_prober import tool_launcher
+from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.editor_page import EditorPage
+from bombastic.ui.library_page import LibraryPage
 from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.queue_page import QueuePage
 from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
-_PLACEHOLDER_PHASES = {"history": 7, "library": 6}
+_PLACEHOLDER_PHASES = {"history": 7}
 
 
 class MainWindow(QMainWindow):
@@ -71,7 +73,11 @@ class MainWindow(QMainWindow):
             db=ctx.db,
             max_concurrent=ctx.settings.max_concurrent_edits,
         )
-        self.editor_page = EditorPage(ctx, self.edit_manager)
+        self.recipes = RecipeStore(ctx.db)
+        self.editor_page = EditorPage(ctx, self.edit_manager, recipes=self.recipes)
+        self.library_page = LibraryPage(self.recipes)
+        self.library_page.recipes_view.open_requested.connect(self._open_recipe)
+        self.library_page.recipes_view.changed.connect(self.editor_page.expert_form.refresh_recipes)
         self.queue_page = QueuePage(
             self.downloads_page.manager, self.downloads_page.thumbnails, self.edit_manager
         )
@@ -81,6 +87,7 @@ class MainWindow(QMainWindow):
             "downloads": self.downloads_page,
             "queue": self.queue_page,
             "editor": self.editor_page,
+            "library": self.library_page,
             "settings": self.settings_page,
         }
         self.pages: dict[str, Page] = {}
@@ -172,6 +179,10 @@ class MainWindow(QMainWindow):
         self._ctx.save_settings()
         self._unsubscribe()
         super().closeEvent(event)
+
+    def _open_recipe(self, recipe_id: int) -> None:
+        self.show_page("editor")
+        self.editor_page.open_recipe(recipe_id)
 
     def _apply_queue_settings(self) -> None:
         self.downloads_page.apply_queue_settings()

@@ -31,7 +31,8 @@ from bombastic.core.formatting import format_bytes, format_timecode
 from bombastic.core.i18n import tr
 from bombastic.core.media_probe import ProbeInfo
 from bombastic.core.media_prober import MediaProber, tool_launcher
-from bombastic.core.ytdlp_runner import Launcher, describe
+from bombastic.core.recipes import FilterInfo, RecipeStore, parse_filters, plan_to_template
+from bombastic.core.ytdlp_runner import Launcher, OutputCollector, describe
 from bombastic.ui.editor_tools import (
     CompressForm,
     ConcatForm,
@@ -52,6 +53,7 @@ from bombastic.ui.editor_tools_extra import (
     TransformForm,
     WatermarkForm,
 )
+from bombastic.ui.expert_panel import ExpertForm, FiltersDialog
 from bombastic.ui.pages import Page
 from bombastic.ui.player import PlayerWidget
 
@@ -113,6 +115,7 @@ class EditorPage(Page):
         ctx: AppContext,
         manager: EditManager,
         probe_launcher: Launcher | None = None,
+        recipes: RecipeStore | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__("editor", parent)
@@ -120,8 +123,11 @@ class EditorPage(Page):
         self._ctx = ctx
         self.manager = manager
         self.prober = MediaProber(probe_launcher or tool_launcher(ctx.paths, Tool.FFPROBE), self)
+        self.recipes = recipes if recipes is not None else RecipeStore(ctx.db)
         self.source: Path | None = None
         self.probe: ProbeInfo | None = None
+        #: Filtros de ``ffmpeg -filters`` (se piden la primera vez que hacen falta).
+        self.filters: list[FilterInfo] | None = None
         self._pending: Path | None = None
 
         self.open_button = QPushButton()
@@ -133,7 +139,6 @@ class EditorPage(Page):
         top.addWidget(self.file_label, 1)
 
         self.player = PlayerWidget()
-        self._apply_theme()
         self.info = QPlainTextEdit()
         self.info.setReadOnly(True)
         self.info.setMaximumHeight(130)
@@ -152,6 +157,7 @@ class EditorPage(Page):
             AnimationForm(),
             SnapshotForm(),
             MetadataForm(),
+            ExpertForm(self.recipes),
         ]
         self.tools = QTabWidget()
         self.tools.setUsesScrollButtons(True)
@@ -159,6 +165,7 @@ class EditorPage(Page):
             self.tools.addTab(form, "")
         self.command_button = QPushButton()
         self.preview_button = QPushButton()
+        self.expert_button = QPushButton()
         #: Trabajo de previsualización o de proxy en marcha (no pasa por la cola).
         self._side_job: FfmpegJob | None = None
         self._proxy_for: Path | None = None
@@ -168,6 +175,7 @@ class EditorPage(Page):
         self.feedback.setWordWrap(True)
         actions = QHBoxLayout()
         actions.addWidget(self.feedback, 1)
+        actions.addWidget(self.expert_button)
         actions.addWidget(self.preview_button)
         actions.addWidget(self.command_button)
         actions.addWidget(self.queue_button)
@@ -194,6 +202,12 @@ class EditorPage(Page):
         self.open_button.clicked.connect(self._browse)
         self.command_button.clicked.connect(self.show_command)
         self.preview_button.clicked.connect(self.preview)
+        self.expert_button.clicked.connect(self.open_in_expert)
+        self.tools.currentChanged.connect(lambda _index: self._refresh())
+        expert = self.expert_form
+        expert.run_requested.connect(self.run_expert)
+        expert.cancel_requested.connect(self._cancel_side)
+        expert.filters_requested.connect(self.show_filters)
         self.player.playback_failed.connect(self._on_playback_failed)
         self.queue_button.clicked.connect(self.add_to_queue)
         self.prober.probed.connect(self._on_probed)
@@ -216,12 +230,94 @@ class EditorPage(Page):
             shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
             shortcut.activated.connect(slot)
         ctx.theme.changed.connect(self._apply_theme)
+        self._apply_theme()
         self.retranslate()
         self._refresh()
 
     def _apply_theme(self) -> None:
         self.player.slider.marker_color = QColor(self._ctx.theme.palette["accent"])
         self.player.slider.update()
+        self.expert_form.set_palette(self._ctx.theme.palette)
+
+    @property
+    def expert_form(self) -> ExpertForm:
+        form = self.forms[-1]
+        assert isinstance(form, ExpertForm)
+        return form
+
+    # ------------------------------------------------------------ modo experto
+
+    def open_in_expert(self) -> bool:
+        """Pasa el comando de la herramienta activa al modo experto para retocarlo."""
+        plan = self.current_plan()
+        if plan is None:
+            return False
+        expert = self.expert_form
+        expert.set_template(plan_to_template(plan))
+        expert.output_ext.setText(plan.output.suffix.lstrip(".") or "mp4")
+        expert.params.clear()
+        self.tools.setCurrentWidget(expert)
+        return True
+
+    def open_recipe(self, recipe_id: int) -> None:
+        recipe = self.recipes.get(recipe_id)
+        if recipe is not None:
+            self.expert_form.refresh_recipes()
+            self.expert_form.load_recipe(recipe)
+            self.tools.setCurrentWidget(self.expert_form)
+
+    def run_expert(self) -> FfmpegJob | None:
+        """Ejecuta el comando del modo experto ahora, con su salida en la consola."""
+        self.tools.setCurrentWidget(self.expert_form)
+        plan = self.current_plan()
+        if plan is None or self._side_job is not None:
+            return None
+        console = self.expert_form.console
+        console.clear()
+        console.appendPlainText("$ " + describe(("ffmpeg", list(plan.passes[0]))))
+
+        def done(status: str) -> None:
+            console.appendPlainText(tr(f"expert.finished.{status}", name=plan.output.name))
+
+        job = self._run_side(plan, done)
+        job.output_line.connect(console.appendPlainText)
+        return job
+
+    def _cancel_side(self) -> None:
+        if self._side_job is not None:
+            self._side_job.cancel()
+
+    def show_filters(self) -> None:
+        """Lista de filtros de ffmpeg; la primera vez se pide a ffmpeg sin bloquear."""
+        if self.filters is not None:
+            self._open_filters_dialog()
+            return
+        launch = self.manager.launcher(["-hide_banner", "-filters"])
+        if launch is None:
+            self.filters = []
+            self._open_filters_dialog()
+            return
+        collector = OutputCollector(launch, self)
+
+        def done(code: int, output: str) -> None:
+            collector.deleteLater()
+            self.filters = parse_filters(output) if code == 0 else []
+            self.expert_form.editor.add_words([f.name for f in self.filters])
+            self._open_filters_dialog()
+
+        collector.finished.connect(done)
+        collector.start()
+
+    def _insert_filter(self, name: str) -> None:
+        if name:
+            self.expert_form.insert(name)
+
+    def _open_filters_dialog(self) -> FiltersDialog:
+        dialog = FiltersDialog(self.filters or [], parent=self)
+        dialog.accepted.connect(lambda: self._insert_filter(dialog.chosen()))
+        dialog.open()
+        self.filters_dialog = dialog
+        return dialog
 
     @property
     def concat_form(self) -> ConcatForm:
@@ -238,6 +334,8 @@ class EditorPage(Page):
             form.retranslate()
         self.command_button.setText(tr("editor.show_command"))
         self.preview_button.setText(tr("editor.preview"))
+        self.expert_button.setText(tr("editor.open_expert"))
+        self.expert_button.setToolTip(tr("editor.open_expert.tooltip"))
         self.preview_button.setToolTip(tr("editor.preview.tooltip"))
         self.queue_button.setText(tr("editor.add_to_queue"))
         self.player.retranslate()
@@ -302,6 +400,9 @@ class EditorPage(Page):
         ready = self.source is not None and self.probe is not None
         self.command_button.setEnabled(ready)
         self.preview_button.setEnabled(ready and self._side_job is None)
+        on_expert = self.tools.currentWidget() is self.expert_form
+        self.expert_button.setEnabled(ready and not on_expert)
+        self.expert_form.set_running(self._side_job is not None)
         self.queue_button.setEnabled(ready)
 
     # ------------------------------------------------------------------ acciones

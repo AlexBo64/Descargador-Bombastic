@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 5 (Editor completo).** Las 14 herramientas del editor, previsualización del
+> **Estado: Fase 6 (Modo experto y recetas).** Comandos de ffmpeg a mano con variables,
+> lista de filtros, recetas reutilizables y "Abrir en modo experto" desde cualquier herramienta.
+>
+> **Fase 5 (Editor completo):** Las 14 herramientas del editor, previsualización del
 > resultado, copia ligera para formatos que el reproductor no abre y aceleración por hardware.
 >
 > **Fase 4 (Editor básico):** Editor con reproductor, marcadores I/O y las
@@ -64,6 +67,13 @@ Qué comprobar:
 15. "Previsualizar resultado" genera 10 s del resultado y los reproduce.
 16. **Ajustes → Editor → Aceleración por hardware → Detectar** prueba NVENC, Quick Sync y AMF;
     si una edición acelerada falla, se repite sola por CPU.
+17. En el editor, pestaña **Experto**: escribe cualquier comando de ffmpeg con `{input}`,
+    `{output}`, `{start}`/`{end}` (marcadores I/O), `{inputs[1]}`, `{dir}`, `{name}` y tus
+    propios parámetros (`{crf}` con `crf=23`). "Filtros…" lista los de `ffmpeg -filters`,
+    "Ejecutar ahora" muestra la salida en vivo y "Guardar como receta…" la guarda.
+18. Desde cualquier herramienta, "Abrir en modo experto" copia su comando para retocarlo.
+19. **Perfiles y recetas** (`Ctrl+5`) lista las recetas: abrir, renombrar, duplicar, favorita,
+    eliminar, exportar e importar en JSON.
 
 ### Modo portable
 
@@ -115,7 +125,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 3 | Modo avanzado de yt-dlp | Hecha |
 | 4 | Editor básico | Hecha |
 | 5 | Editor completo | Hecha |
-| 6 | Modo experto y recetas | Pendiente |
+| 6 | Modo experto y recetas | Hecha |
 | 7 | Perfiles, historial y encadenado | Pendiente |
 | 8 | Actualizaciones | Pendiente |
 | 9 | Integración con Windows | Pendiente |
