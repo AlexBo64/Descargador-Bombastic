@@ -4,9 +4,9 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 0 (esqueleto).** La ventana, los temas, los idiomas, los ajustes, los logs y la
-> detección de dependencias funcionan. Todavía **no descarga ni edita**: eso llega en las fases 1
-> a 7. Tampoco hay instalador (Fase 10).
+> **Estado: Fase 1 (MVP de descarga).** Ya se puede pegar un enlace, ver su información y
+> descargarlo con progreso en varios formatos. La cola, el modo avanzado y el editor llegan en
+> las fases siguientes.
 
 ## Probarlo en Windows (desarrollo)
 
@@ -73,7 +73,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0 | Esqueleto | Hecha |
-| 1 | MVP de descarga | Pendiente |
+| 1 | MVP de descarga | Hecha |
 | 2 | Cola | Pendiente |
 | 3 | Modo avanzado de yt-dlp | Pendiente |
 | 4 | Editor básico | Pendiente |

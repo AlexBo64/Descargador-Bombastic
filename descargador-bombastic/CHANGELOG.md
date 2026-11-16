@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0 — Fase 1: MVP de descarga
+
+- Página de Descargas: pegar uno o varios enlaces (Ctrl+Intro), con o sin `https://`.
+- Tarjeta por enlace con miniatura, título, canal, duración y aviso de lista de reproducción,
+  obtenidos con `yt-dlp -J --flat-playlist`.
+- Presets del modo simple: vídeo mejor calidad (MP4 H.264/AAC compatible), 1080p, 720p, 480p,
+  audio MP3 (128/192/320 kbps o V0), M4A, Opus, FLAC y WAV; subtítulos incrustados; miniatura y
+  metadatos incrustados. Las opciones se recuerdan.
+- Descarga con progreso real (una barra para vídeo + audio y para listas), velocidad, tamaño y
+  tiempo restante; fase de post-procesado; cancelar (mata yt-dlp y sus procesos hijo) y abrir
+  la carpeta.
+- Avisos si faltan yt-dlp o ffmpeg y confirmación al salir con una descarga en curso.
+- Constructor de comandos, parser de progreso, metadatos y gestor de descargas con tests
+  (yt-dlp falso en `tests/fake_ytdlp.py`).
+
 ## 0.1.0 — Fase 0: esqueleto
 
 - Estructura del proyecto por capas (`core`, `ui`, `platform_win`, `resources`).

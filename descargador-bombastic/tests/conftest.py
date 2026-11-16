@@ -7,6 +7,7 @@ import os
 # Debe fijarse antes de importar Qt: permite ejecutar los tests sin pantalla (CI).
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from bombastic.context import AppContext
 from bombastic.core import i18n
 from bombastic.core.paths import AppPaths, resources_dir
 from bombastic.core.settings import SettingsStore
+from bombastic.core.ytdlp_runner import Launch, Launcher
 from bombastic.ui.theme import ThemeManager
 
 
@@ -33,6 +35,17 @@ def translator() -> Iterator[i18n.Translator]:
     i18n.install(translator)
     yield translator
     i18n.install(i18n.Translator(resources_dir() / "i18n"))
+
+
+@pytest.fixture
+def fake_launcher() -> Launcher:
+    """Lanza ``tests/fake_ytdlp.py`` con el intérprete actual en vez del yt-dlp real."""
+    script = str(Path(__file__).with_name("fake_ytdlp.py"))
+
+    def launch(args: list[str]) -> Launch | None:
+        return sys.executable, [script, *args]
+
+    return launch
 
 
 @pytest.fixture

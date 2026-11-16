@@ -26,6 +26,9 @@ PALETTES: dict[str, dict[str, str]] = {
         "accent": "#8a7bf5",
         "accent_soft": "#2f2b57",
         "accent_text": "#dcd7ff",
+        "accent_hover": "#9d90f8",
+        "on_accent": "#ffffff",
+        "danger": "#ff8a80",
     },
     "light": {
         "bg": "#f5f6f8",
@@ -40,6 +43,9 @@ PALETTES: dict[str, dict[str, str]] = {
         "accent": "#5b4be0",
         "accent_soft": "#e3dfff",
         "accent_text": "#3a2bb8",
+        "accent_hover": "#4a3bcf",
+        "on_accent": "#ffffff",
+        "danger": "#c62828",
     },
 }
 

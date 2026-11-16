@@ -46,10 +46,13 @@ Una fase no está terminada hasta que `ruff check .`, `ruff format --check .`, `
 - Traducciones en catálogos JSON propios, no `.ts/.qm` de Qt.
 - El código vive dentro del paquete `bombastic/` (`bombastic/core`, `bombastic/ui`…).
 - La salida de PyInstaller irá a `out/`; `build/` queda para los scripts.
-- Plantilla de progreso de yt-dlp: usar la conversión `j` para que los campos sin valor salgan
-  como `null` en vez de `NA`.
+- Plantilla de progreso de yt-dlp: se usa la conversión `j`, pero los campos sin valor siguen
+  saliendo como `NA` sin comillas; `core/ytdlp_progress.py` los convierte en `null`.
 
-## Pendiente de verificar al empezar la Fase 1
+## Notas verificadas
 
-- Si la versión actual de yt-dlp necesita un runtime de JavaScript externo (Deno) para YouTube.
-  Si es así, tratarlo como una dependencia más en `bin\`.
+- yt-dlp necesita Deno para YouTube: se trata como una dependencia más (`deno.exe` en `bin\`
+  o en el PATH).
+- `yt-dlp.exe` se relanza a sí mismo como proceso hijo: cancelar exige matar el árbol
+  (`platform_win/process.py`).
+- Tests: `tests/fake_ytdlp.py` imita la salida de yt-dlp; nunca se usan binarios reales.

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -26,7 +26,6 @@ from bombastic.context import AppContext
 from bombastic.core.binaries import BinaryStatus, Tool, locate_all
 from bombastic.core.binary_probe import BinaryProbe
 from bombastic.core.i18n import tr
-from bombastic.core.paths import default_download_dir
 from bombastic.core.settings import LANGUAGES, THEMES
 from bombastic.ui.pages import Page
 
@@ -177,7 +176,9 @@ class SettingsPage(Page):
         self.open_logs_button.setText(tr("settings.data.open_logs"))
 
         self.shortcuts_box.setTitle(tr("settings.shortcuts"))
-        self.shortcuts_label.setText(tr("settings.shortcuts.navigation"))
+        self.shortcuts_label.setText(
+            "\n".join((tr("settings.shortcuts.navigation"), tr("settings.shortcuts.downloads")))
+        )
 
     @staticmethod
     def _fill_combo(combo: QComboBox, values: tuple[str, ...], prefix: str, current: str) -> None:
@@ -192,7 +193,12 @@ class SettingsPage(Page):
     # ------------------------------------------------------------- preferencias
 
     def download_dir(self) -> str:
-        return self._ctx.settings.download_dir or str(default_download_dir())
+        return self._ctx.download_dir()
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        # La carpeta también se puede cambiar desde la página de descargas.
+        self.download_dir_edit.setText(self.download_dir())
 
     def _on_language_changed(self, index: int) -> None:
         language = self.language_combo.itemData(index)

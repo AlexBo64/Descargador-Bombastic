@@ -5,8 +5,18 @@ from pathlib import Path
 import pytest
 
 from bombastic.core import i18n
+from bombastic.core.download_manager import ItemState
 from bombastic.core.paths import resources_dir
 from bombastic.core.settings import LANGUAGES, PAGES, THEMES
+from bombastic.core.ytdlp_command import MP3_QUALITIES, Preset
+from bombastic.core.ytdlp_runner import (
+    ERROR_BAD_INFO,
+    ERROR_EXIT_CODE,
+    ERROR_MISSING,
+    ERROR_START_FAILED,
+    ERROR_TIMEOUT,
+    ERROR_YTDLP,
+)
 
 CATALOGS = resources_dir() / "i18n"
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
@@ -36,6 +46,21 @@ def test_keys_built_dynamically_exist() -> None:
         assert f"settings.theme.{theme}" in catalog
     for language in LANGUAGES:
         assert f"settings.language.{language}" in catalog
+    for preset in Preset:
+        assert f"downloads.preset.{preset.value}" in catalog
+    for quality in MP3_QUALITIES:
+        assert f"downloads.mp3_quality.{quality}" in catalog
+    for state in ItemState:
+        assert f"downloads.status.{state.value}" in catalog
+    for code in (
+        ERROR_YTDLP,
+        ERROR_EXIT_CODE,
+        ERROR_START_FAILED,
+        ERROR_TIMEOUT,
+        ERROR_BAD_INFO,
+        ERROR_MISSING,
+    ):
+        assert f"downloads.error.{code}" in catalog
 
 
 def test_translate_switch_and_format() -> None:

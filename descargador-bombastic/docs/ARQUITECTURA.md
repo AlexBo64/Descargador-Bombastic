@@ -25,6 +25,19 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - El estado duradero (cola, historial, perfiles) vive en SQLite; las preferencias, en
   `settings.json`.
 
+## Módulos de descarga (Fase 1)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/urls.py` | Saca los enlaces del texto pegado |
+| `core/ytdlp_command.py` | Presets y construcción de argumentos (`-J` y descarga) |
+| `core/ytdlp_progress.py` | Plantillas `BMBPROG`/`BMBPP`/`BMBFILE`, parser tolerante y `ProgressTracker` |
+| `core/media_info.py` | Interpreta la salida de `-J` |
+| `core/ytdlp_runner.py` | `InfoFetcher` y `DownloadJob` sobre `QProcess` |
+| `core/download_manager.py` | Estado de cada enlace y turno de descargas |
+| `core/thumbnails.py` | Descarga y caché de miniaturas con QtNetwork |
+| `platform_win/process.py` | `taskkill /T /F` para matar el árbol de procesos |
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,
@@ -42,9 +55,10 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 1. Pausar o cancelar matando yt-dlp puede dejar procesos hijo (ffmpeg) vivos en Windows →
    Job Objects o `taskkill /T`.
 2. yt-dlp necesita un runtime de JavaScript externo (Deno) para YouTube en sus versiones
-   recientes → verificar en la Fase 1 y tratarlo como dependencia adicional si se confirma.
-3. La plantilla de progreso con campos `NA` produce JSON inválido → usar la conversión `j`
-   de yt-dlp y un parser tolerante.
+   recientes. Confirmado en la Fase 1: con Deno en el PATH funciona; se busca como una
+   dependencia más (Ajustes → Dependencias) y el asistente lo explica.
+3. La plantilla de progreso con campos `NA` produce JSON inválido. Comprobado: incluso con la
+   conversión `j`, yt-dlp escribe `NA` sin comillas → el parser lo sustituye por `null`.
 4. Parsear `yt-dlp --help` es frágil → catálogo generado en build como respaldo.
 5. QtMultimedia: paso de fotograma aproximado y códecs no soportados → proxy H.264.
 6. Antivirus y SmartScreen sin firma de código → `--onedir`, documentación, `signtool` opcional.

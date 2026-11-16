@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 
+from bombastic.core.ytdlp_command import DEFAULT_MP3_QUALITY, MP3_QUALITIES, Preset
+
 log = logging.getLogger(__name__)
 
 LANGUAGES: tuple[str, ...] = ("es", "en")
@@ -31,6 +33,11 @@ class Settings:
     window_height: int = 760
     window_maximized: bool = False
     last_page: str = "downloads"
+    #: Opciones del modo simple de descargas (se recuerdan entre sesiones).
+    download_preset: str = Preset.BEST.value
+    mp3_quality: str = DEFAULT_MP3_QUALITY
+    embed_subs: bool = False
+    embed_extras: bool = False
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""
@@ -41,6 +48,10 @@ class Settings:
             self.theme = defaults.theme
         if self.last_page not in PAGES:
             self.last_page = defaults.last_page
+        if self.download_preset not in {preset.value for preset in Preset}:
+            self.download_preset = defaults.download_preset
+        if self.mp3_quality not in MP3_QUALITIES:
+            self.mp3_quality = defaults.mp3_quality
         self.window_width = max(MIN_WINDOW_WIDTH, min(self.window_width, 10_000))
         self.window_height = max(MIN_WINDOW_HEIGHT, min(self.window_height, 10_000))
 

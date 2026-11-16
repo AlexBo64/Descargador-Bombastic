@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMessageBox,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -20,12 +21,13 @@ from bombastic import APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core.i18n import tr
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
+from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.pages import Page, PlaceholderPage
 from bombastic.ui.settings_page import SettingsPage
 from bombastic.ui.theme import load_icon
 
 #: Fase del plan en la que se implementa cada sección todavía vacía.
-_PLACEHOLDER_PHASES = {"downloads": 1, "queue": 2, "editor": 4, "history": 7, "library": 6}
+_PLACEHOLDER_PHASES = {"queue": 2, "editor": 4, "history": 7, "library": 6}
 
 
 class MainWindow(QMainWindow):
@@ -57,14 +59,12 @@ class MainWindow(QMainWindow):
 
         # --- Páginas ---
         self.stack = QStackedWidget()
+        self.downloads_page = DownloadsPage(ctx)
         self.settings_page = SettingsPage(ctx)
+        ready: dict[str, Page] = {"downloads": self.downloads_page, "settings": self.settings_page}
         self.pages: dict[str, Page] = {}
         for key in PAGES:
-            page: Page = (
-                self.settings_page
-                if key == "settings"
-                else PlaceholderPage(key, _PLACEHOLDER_PHASES[key])
-            )
+            page = ready[key] if key in ready else PlaceholderPage(key, _PLACEHOLDER_PHASES[key])
             self.pages[key] = page
             self.stack.addWidget(page)
             self.nav.addItem(QListWidgetItem())
@@ -133,6 +133,10 @@ class MainWindow(QMainWindow):
         self.show_page(settings.last_page)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        if self.downloads_page.has_active_downloads() and not self._confirm_exit():
+            event.ignore()
+            return
+        self.downloads_page.shutdown()
         settings = self._ctx.settings
         settings.window_maximized = self.isMaximized()
         if not self.isMaximized():
@@ -141,3 +145,14 @@ class MainWindow(QMainWindow):
         self._ctx.save_settings()
         self._unsubscribe()
         super().closeEvent(event)
+
+    def _confirm_exit(self) -> bool:
+        """Pregunta antes de cerrar con una descarga a medias."""
+        answer = QMessageBox.question(
+            self,
+            tr("downloads.confirm_exit.title"),
+            tr("downloads.confirm_exit.text"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes

@@ -119,17 +119,54 @@ QPushButton:disabled {
     color: {{muted}};
 }
 
-QLineEdit, QComboBox {
+QLineEdit, QComboBox, QPlainTextEdit {
     background: {{input}};
     border: 1px solid {{border}};
     border-radius: 7px;
     padding: 5px 8px;
     selection-background-color: {{accent}};
-    selection-color: #ffffff;
+    selection-color: {{on_accent}};
 }
 
-QPushButton:focus, QLineEdit:focus, QComboBox:focus {
+QPushButton:focus, QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus {
     border-color: {{accent}};
+}
+
+QPushButton[primary="true"] {
+    background: {{accent}};
+    border-color: {{accent}};
+    color: {{on_accent}};
+    font-weight: 600;
+}
+
+QPushButton[primary="true"]:hover {
+    background: {{accent_hover}};
+    border-color: {{accent_hover}};
+}
+
+QPushButton[primary="true"]:disabled {
+    background: {{surface_alt}};
+    border-color: {{border}};
+    color: {{muted}};
+}
+
+QCheckBox {
+    spacing: 7px;
+}
+
+QCheckBox:disabled {
+    color: {{muted}};
+}
+
+QProgressBar {
+    background: {{surface_alt}};
+    border: none;
+    border-radius: 3px;
+}
+
+QProgressBar::chunk {
+    background: {{accent}};
+    border-radius: 3px;
 }
 
 QComboBox::drop-down {
@@ -166,4 +203,32 @@ QScrollBar::handle:vertical {
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
     height: 0;
+}
+/* ---- Descargas ---- */
+QFrame#DownloadCard {
+    background: {{surface}};
+    border: 1px solid {{border}};
+    border-radius: 10px;
+}
+
+QLabel#Thumbnail {
+    background: {{surface_alt}};
+    border-radius: 6px;
+}
+
+QLabel#CardTitle {
+    font-size: 11pt;
+    font-weight: 600;
+}
+
+QLabel#CardStatus[error="true"] {
+    color: {{danger}};
+}
+
+QLabel#Warning {
+    color: {{danger}};
+    background: {{surface}};
+    border: 1px solid {{danger}};
+    border-radius: 8px;
+    padding: 8px 12px;
 }
