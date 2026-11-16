@@ -1,8 +1,11 @@
 Descargador Bombastic usa los siguientes componentes de terceros.
 
-Estado en la Fase 0: la aplicación todavía no distribuye ningún binario. Este archivo se
-completará en las fases 8 y 10 con la versión exacta, la URL de descarga y el SHA-256 de cada
-ejecutable incluido en el instalador.
+El instalador y la versión portable incluyen yt-dlp.exe, ffmpeg.exe y ffprobe.exe sin
+modificar, descargados de sus releases oficiales en GitHub y verificados con el SHA-256 que
+publica cada proyecto. La versión exacta, la URL y el SHA-256 de cada uno de una versión
+concreta de la app están en bin\SOURCES.txt, junto al ejecutable (lo genera
+build\fetch_binaries.py al compilar). Las actualizaciones desde la app usan las mismas
+fuentes y comprobaciones.
 
 ------------------------------------------------------------------------------
 PySide6 (Qt for Python) y Qt 6
@@ -20,8 +23,10 @@ yt-dlp (ejecutable externo, no enlazado)
 
 ------------------------------------------------------------------------------
 FFmpeg: ffmpeg y ffprobe (ejecutables externos, no enlazados)
-  Licencia: GPL-3.0 o LGPL según la build. Las builds "essentials" de gyan.dev y las builds
-            "gpl" de BtbN son GPL-3.0.
-  Origen:   https://www.gyan.dev/ffmpeg/builds/  o  https://github.com/BtbN/FFmpeg-Builds
+  Licencia: GPL-3.0 (build "win64-gpl" de BtbN, la que incluye y descarga la app).
+  Origen:   https://github.com/BtbN/FFmpeg-Builds/releases (ffmpeg-master-latest-win64-gpl.zip)
+  Fuentes:  la configuración de la build está en https://github.com/BtbN/FFmpeg-Builds y el
+            código fuente de FFmpeg en https://ffmpeg.org/download.html. Ofrecemos también el
+            código fuente correspondiente a petición, como exige la GPL.
   Fuentes:  https://ffmpeg.org/download.html
   Texto:    https://www.gnu.org/licenses/gpl-3.0.html

@@ -84,6 +84,26 @@ def locate(
     return BinaryLocation(tool, None, Source.MISSING)
 
 
+def seed_bundled(paths: AppPaths, platform: str | None = None) -> list[Path]:
+    """Copia a la carpeta de datos los ejecutables incluidos con la app que aún no estén.
+
+    Así se pueden actualizar sin administrador aunque la app esté en Archivos de programa.
+    Nunca sobrescribe: si ya hay uno en la carpeta de datos, es el que se ha actualizado.
+    """
+    copied: list[Path] = []
+    for tool in Tool:
+        name = exe_name(tool, platform)
+        source, target = paths.bundled_bin_dir / name, paths.bin_dir / name
+        if source.is_file() and not target.exists() and paths.bundled_bin_dir != paths.bin_dir:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
+                copied.append(target)
+            except OSError:
+                continue
+    return copied
+
+
 def locate_all(paths: AppPaths, search_system_path: bool = True) -> dict[Tool, BinaryLocation]:
     return {tool: locate(tool, paths, search_system_path) for tool in Tool}
 

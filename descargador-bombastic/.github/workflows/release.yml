@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Compilar instalador y portable
+        shell: pwsh
+        run: ./build/build.ps1 -Python python
+        env:
+          SIGN_CERT_FILE: ${{ secrets.SIGN_CERT_FILE }}
+          SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DescargadorBombastic
+          path: out/release/*
+      - name: Publicar en la release del tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/release/*

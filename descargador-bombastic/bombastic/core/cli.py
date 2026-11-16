@@ -22,6 +22,8 @@ class AppCommand:
     action_files: list[Path] = field(default_factory=list)
     #: Enlaces para añadir a Descargas.
     download: list[str] = field(default_factory=list)
+    #: Arrancar oculto en la bandeja (inicio con Windows).
+    minimized: bool = False
 
     @property
     def empty(self) -> bool:
@@ -39,6 +41,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--edit", nargs="+", default=[])
     parser.add_argument("--action", nargs="+", default=[])
     parser.add_argument("--download", nargs="+", default=[])
+    # Al iniciar con Windows: arrancar oculto en la bandeja.
+    parser.add_argument("--minimized", action="store_true")
     parser.add_argument("files", nargs="*", default=[])
     return parser
 
@@ -52,6 +56,7 @@ def parse_command(argv: list[str]) -> AppCommand:
     command = AppCommand(
         edit=[Path(p) for p in namespace.edit],
         download=[u for u in namespace.download if u.strip()],
+        minimized=namespace.minimized,
     )
     if namespace.action:
         command.action = namespace.action[0]

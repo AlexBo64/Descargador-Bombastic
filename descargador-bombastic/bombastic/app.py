@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from bombastic import APP_ID, APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core import i18n
+from bombastic.core.binaries import seed_bundled
 from bombastic.core.cli import parse_command
 from bombastic.core.db import Database
 from bombastic.core.logging_setup import install_excepthook, setup_logging
@@ -80,13 +81,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         log.info("Another instance is running; arguments forwarded")
         return 0
 
+    for copied in seed_bundled(paths):
+        log.info("Copied bundled %s to the data folder", copied.name)
     db = Database(paths.db_path)
     ctx = AppContext(paths, settings, store, translator, theme, db)
     window = MainWindow(ctx)
     server = InstanceServer(name, window)
     server.message_received.connect(window.handle_args)
-    window.show()
     command = parse_command(args)
+    if not (command.minimized and window.tray is not None):
+        window.show()
     if not command.empty:
         QTimer.singleShot(0, lambda: window.handle_command(command))
     # Tras mostrar la ventana, para que el arranque no espere a los ejecutables externos.

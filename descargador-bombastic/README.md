@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 9 (Integración con Windows).** Bandeja, notificaciones, instancia única,
+> **Estado: Fase 10 (Distribución).** Instalador, versión portable y build reproducible con
+> GitHub Actions.
+>
+> **Fase 9 (Integración con Windows):** Bandeja, notificaciones, instancia única,
 > línea de comandos, arrastrar y soltar en toda la ventana y menú contextual del Explorador.
 >
 > **Fase 8 (Actualizaciones):** yt-dlp y ffmpeg se actualizan desde la app (con
@@ -29,6 +32,37 @@ de vídeo y audio).
 > progreso en varios formatos, en una cola persistente con descargas simultáneas, pausa,
 > reanudación, reintentos y errores explicados en español. El modo avanzado y el editor llegan
 > en las fases siguientes.
+
+## Instalación (usuarios)
+
+1. Descarga `DescargadorBombastic-Setup-x.y.z.exe` de la página de releases y ábrelo.
+2. Si aparece "Windows protegió tu PC" (SmartScreen), pulsa **Más información → Ejecutar de
+   todas formas**: el ejecutable no está firmado (ver preguntas frecuentes).
+3. Por defecto se instala solo para tu usuario, sin administrador. Puedes elegir acceso directo
+   en el escritorio, el menú contextual del Explorador e iniciar con Windows en la bandeja.
+
+**Portable:** descomprime `DescargadorBombastic-Portable-x.y.z.zip` donde quieras y ejecuta
+`DescargadorBombastic.exe`. Guarda todo en la carpeta `data\` de al lado (por el archivo
+`portable.flag`) y no toca el registro.
+
+## Compilar el instalador (desarrolladores)
+
+En Windows, con [Python 3.12](https://www.python.org/downloads/) e
+[Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build\build.ps1
+```
+
+El script crea `.venv-build`, instala las dependencias fijadas (`requirements*.txt`), descarga
+y verifica yt-dlp y ffmpeg, regenera el catálogo de opciones, el icono y la versión del `.exe`,
+pasa ruff, mypy y los tests, ejecuta PyInstaller (`--onedir`) y deja en `out\release` el
+instalador, el zip portable y `SHA256SUMS.txt`. Para firmar, define `SIGN_CERT_FILE` y
+`SIGN_CERT_PASSWORD` (usa `signtool`). No compiles el `.exe` fuera de Windows.
+
+Con GitHub Actions: al subir un tag `v*` (por ejemplo `git tag v1.0.0 && git push --tags`), el
+workflow `.github/workflows/release.yml` hace lo mismo en `windows-latest` y publica los
+archivos en la release.
 
 ## Probarlo en Windows (desarrollo)
 
@@ -158,10 +192,18 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 7 | Perfiles, historial y encadenado | Hecha |
 | 8 | Actualizaciones | Hecha |
 | 9 | Integración con Windows | Hecha |
-| 10 | Distribución (instalador, portable, GitHub Actions de release) | Pendiente |
+| 10 | Distribución (instalador, portable, GitHub Actions de release) | Hecha |
 | 11 | Pulido y manual de usuario | Pendiente |
 
 ## Preguntas frecuentes
+
+**"Windows protegió tu PC" al instalar.** Es SmartScreen: avisa de todo ejecutable sin firma de
+código o que se descarga poco. Pulsa "Más información" y "Ejecutar de todas formas". El script
+de compilación deja preparada la firma con `signtool` para quien tenga un certificado.
+
+**El antivirus borra o bloquea yt-dlp o ffmpeg.** Algunos antivirus marcan por error
+ejecutables descargadores. Añade una excepción para la carpeta de la app y para
+`%LOCALAPPDATA%\DescargadorBombastic\bin`; al arrancar, la app ofrece volver a descargarlos.
 
 **No veo el menú contextual en Windows 11.** Está en "Mostrar más opciones" (o Mayús + clic
 derecho). El menú moderno de Windows 11 exige un paquete MSIX y no se incluye.

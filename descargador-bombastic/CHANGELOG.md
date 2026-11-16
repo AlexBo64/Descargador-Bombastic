@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.11.0 — Fase 10: Distribución
+
+- `build/DescargadorBombastic.spec` (PyInstaller `--onedir`, sin UPX, icono e información de
+  versión del `.exe`).
+- Icono `.ico` multi-resolución generado desde `app.svg` (`build/make_icon.py`).
+- Instalador Inno Setup 6 (`build/installer.iss`): por usuario sin administrador u opción para
+  todos, español e inglés, acceso directo, menú contextual (las mismas claves que registra la
+  app, generadas con `build/gen_installer_registry.py`), inicio con Windows minimizado en la
+  bandeja (`--minimized`) y desinstalador que quita el registro y pregunta si borrar los datos.
+- yt-dlp y ffmpeg se descargan y verifican al compilar (`build/fetch_binaries.py`, con
+  `bin\SOURCES.txt`); la app los copia a la carpeta de datos en el primer arranque.
+- Versión portable en zip con `portable.flag`.
+- `build/build.ps1` y workflow `release.yml` que publica instalador, portable y
+  `SHA256SUMS.txt` en cada tag `v*`. Firma opcional con `signtool`.
+- README: instalación, compilación, SmartScreen y antivirus.
+
 ## 0.10.0 — Fase 9: Integración con Windows
 
 - Arrastrar y soltar en toda la ventana: enlaces y `.txt` a Descargas; vídeo y audio al Editor.

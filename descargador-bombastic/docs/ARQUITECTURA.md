@@ -157,6 +157,20 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - Los tests comprueban las entradas del registro sin escribirlas; el registro real solo se
   toca desde Ajustes o el instalador.
 
+## Distribución (Fase 10)
+
+| Archivo | Qué hace |
+|---|---|
+| `build/build.ps1` | Todo el proceso: venv, binarios, recursos, calidad, PyInstaller, firma, instalador, zip |
+| `build/DescargadorBombastic.spec` | PyInstaller `--onedir` |
+| `build/installer.iss` | Inno Setup 6 (incluye `out/registry.iss`, generado) |
+| `build/fetch_binaries.py` | yt-dlp y ffmpeg con SHA-256, mismo código que el actualizador |
+| `build/make_icon.py`, `build/version_info.py` | Icono `.ico` y versión del `.exe` |
+| `.github/workflows/release.yml` | Release en cada tag `v*` |
+
+- No se ha podido compilar el `.exe` en el equipo de desarrollo (sin PyInstaller ni Inno Setup
+  instalados): la compilación real es la de GitHub Actions o `build.ps1` en Windows.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,
