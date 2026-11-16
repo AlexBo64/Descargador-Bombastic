@@ -143,6 +143,20 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
   instala.
 - Los tests usan URLs `file://` que imitan la API de GitHub: no hay red en los tests.
 
+## Integración con Windows (Fase 9)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/cli.py` | `--download`, `--edit`, `--action` → `AppCommand` (y al revés, para reenviar) |
+| `platform_win/single_instance.py` | `InstanceServer` y `send_to_running` (JSON por `QLocalSocket`) |
+| `platform_win/context_menu.py` | Entradas del registro del submenú y alta/baja en HKCU |
+| `platform_win/tray.py` | Icono de bandeja, menú, tooltip y notificaciones |
+
+- Las acciones del menú contextual reutilizan `ChainRunner.queue_files` y los planes de las
+  acciones encadenadas; "Comprimir…" abre el editor porque necesita que el usuario elija.
+- Los tests comprueban las entradas del registro sin escribirlas; el registro real solo se
+  toca desde Ajustes o el instalador.
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

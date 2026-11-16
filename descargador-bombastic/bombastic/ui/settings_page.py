@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -30,8 +31,10 @@ from bombastic.core.binary_probe import BinaryProbe
 from bombastic.core.hwaccel import HwProbe
 from bombastic.core.i18n import tr
 from bombastic.core.media_prober import tool_launcher
+from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
 from bombastic.core.ytdlp_runner import CatalogRefresher, default_launcher
+from bombastic.platform_win import context_menu
 from bombastic.ui.pages import Page
 from bombastic.ui.updates import Updates, UpdatesBox
 
@@ -126,6 +129,25 @@ class SettingsPage(Page):
         editor_form.addRow(self.hw_status)
         column.addWidget(self.editor_box)
 
+        # --- Windows ---
+        self.windows_box = QGroupBox()
+        windows = QVBoxLayout(self.windows_box)
+        self.tray_check = QCheckBox()
+        self.tray_check.setChecked(settings.minimize_to_tray)
+        self.notify_check = QCheckBox()
+        self.notify_check.setChecked(settings.notifications)
+        self.menu_button = QPushButton()
+        self.menu_status = QLabel()
+        self.menu_status.setWordWrap(True)
+        self.menu_status.setProperty("muted", True)
+        menu_row = QHBoxLayout()
+        menu_row.addWidget(self.menu_button)
+        menu_row.addWidget(self.menu_status, 1)
+        windows.addWidget(self.tray_check)
+        windows.addWidget(self.notify_check)
+        windows.addLayout(menu_row)
+        column.addWidget(self.windows_box)
+
         # --- Actualizaciones ---
         self.updates_box = QGroupBox()
         updates_layout = QVBoxLayout(self.updates_box)
@@ -212,6 +234,9 @@ class SettingsPage(Page):
         self.retries_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.edits_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.archive_check.toggled.connect(self._on_archive_toggled)
+        self.tray_check.toggled.connect(self._on_windows_changed)
+        self.notify_check.toggled.connect(self._on_windows_changed)
+        self.menu_button.clicked.connect(self.toggle_context_menu)
         self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
         self.catalog_button.clicked.connect(self.refresh_catalog)
@@ -254,6 +279,10 @@ class SettingsPage(Page):
         if not self.hw_status.text():
             self.hw_status.setText(tr("settings.hw.hint"))
 
+        self.windows_box.setTitle(tr("settings.windows"))
+        self.tray_check.setText(tr("settings.minimize_to_tray"))
+        self.notify_check.setText(tr("settings.notifications"))
+        self._show_menu_state()
         self.updates_box.setTitle(tr("settings.updates"))
         self.updates_panel.retranslate()
         self.dependencies_box.setTitle(tr("settings.dependencies"))
@@ -326,6 +355,44 @@ class SettingsPage(Page):
         settings.rate_limit = rate
         self._ctx.save_settings()
         self.queue_settings_changed.emit()
+
+    def _on_windows_changed(self) -> None:
+        settings = self._ctx.settings
+        settings.minimize_to_tray = self.tray_check.isChecked()
+        settings.notifications = self.notify_check.isChecked()
+        self._ctx.save_settings()
+
+    def _show_menu_state(self) -> None:
+        available = sys.platform == "win32" and not self._ctx.paths.portable
+        registered = available and context_menu.is_registered()
+        self.menu_button.setEnabled(available)
+        self.menu_button.setText(
+            tr("settings.context_menu.remove" if registered else "settings.context_menu.add")
+        )
+        if self._ctx.paths.portable:
+            self.menu_status.setText(tr("settings.context_menu.portable"))
+        elif not available:
+            self.menu_status.setText(tr("settings.context_menu.windows_only"))
+        else:
+            self.menu_status.setText(tr("settings.context_menu.hint"))
+
+    def context_menu_labels(self) -> dict[str, str]:
+        return {
+            key: tr(f"context.{key}")
+            for key in ("menu", "edit", "convert_mp4", "extract_mp3", "compress", "recipe")
+        }
+
+    def toggle_context_menu(self) -> None:
+        """Registra o quita el submenú del Explorador (solo HKCU, sin administrador)."""
+        if context_menu.is_registered():
+            context_menu.unregister()
+        else:
+            favorites = [r.name for r in RecipeStore(self._ctx.db).favorites()]
+            entries = context_menu.registry_entries(
+                context_menu.launch_command(), self.context_menu_labels(), favorites
+            )
+            context_menu.register(entries)
+        self._show_menu_state()
 
     def _on_archive_toggled(self, checked: bool) -> None:
         self._ctx.settings.use_download_archive = checked

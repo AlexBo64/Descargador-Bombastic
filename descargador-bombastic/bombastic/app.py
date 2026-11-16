@@ -12,10 +12,12 @@ from PySide6.QtWidgets import QApplication
 from bombastic import APP_ID, APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core import i18n
+from bombastic.core.cli import parse_command
 from bombastic.core.db import Database
 from bombastic.core.logging_setup import install_excepthook, setup_logging
 from bombastic.core.paths import resolve_paths, resources_dir
 from bombastic.core.settings import SettingsStore
+from bombastic.platform_win.single_instance import InstanceServer, send_to_running, server_name
 from bombastic.ui.main_window import MainWindow
 from bombastic.ui.theme import ThemeManager
 
@@ -71,10 +73,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     theme = ThemeManager(app)
     theme.apply(settings.theme)
 
+    # Instancia única: si ya hay una abierta, se le pasan los argumentos y se sale.
+    args = list(argv[1:] if argv is not None else sys.argv[1:])
+    name = server_name(str(paths.data_dir))
+    if send_to_running(name, args):
+        log.info("Another instance is running; arguments forwarded")
+        return 0
+
     db = Database(paths.db_path)
     ctx = AppContext(paths, settings, store, translator, theme, db)
     window = MainWindow(ctx)
+    server = InstanceServer(name, window)
+    server.message_received.connect(window.handle_args)
     window.show()
+    command = parse_command(args)
+    if not command.empty:
+        QTimer.singleShot(0, lambda: window.handle_command(command))
     # Tras mostrar la ventana, para que el arranque no espere a los ejecutables externos.
     QTimer.singleShot(0, window.settings_page.refresh_dependencies)
     QTimer.singleShot(1500, window.startup_checks)

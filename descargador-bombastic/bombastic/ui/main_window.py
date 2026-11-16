@@ -4,9 +4,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
+from PySide6.QtCore import QSize, Qt, QUrl
+from PySide6.QtGui import (
+    QCloseEvent,
+    QDesktopServices,
+    QDragEnterEvent,
+    QDropEvent,
+    QKeySequence,
+    QShortcut,
+)
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -22,14 +30,18 @@ from PySide6.QtWidgets import (
 from bombastic import APP_NAME, __version__
 from bombastic.context import AppContext
 from bombastic.core.binaries import Tool
-from bombastic.core.chain import ChainRunner
-from bombastic.core.edit_manager import EditManager
+from bombastic.core.chain import ChainAction, ChainRunner
+from bombastic.core.cli import AppCommand, parse_command
+from bombastic.core.download_manager import ItemState
+from bombastic.core.edit_manager import EditManager, EditState
 from bombastic.core.history import HistoryRecorder, HistoryStore, ProfileStore
 from bombastic.core.i18n import tr
 from bombastic.core.media_prober import MediaProber, tool_launcher
 from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, PAGES
 from bombastic.core.updater import should_check
+from bombastic.platform_win.context_menu import MEDIA_EXTENSIONS
+from bombastic.platform_win.tray import Tray
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.editor_page import EditorPage
 from bombastic.ui.history_page import HistoryPage
@@ -151,6 +163,28 @@ class MainWindow(QMainWindow):
         self._unsubscribe = ctx.translator.subscribe(lambda _language: self.retranslate())
         ctx.theme.changed.connect(self._refresh_icons)
 
+        # --- Integración con Windows ---
+        self.setAcceptDrops(True)
+        self._quitting = False
+        self._tray_hint_shown = False
+        self._edit_states: dict[int, EditState] = {}
+        self.app_icon = load_icon("app", ctx.theme.palette["accent"], 64)
+        self.setWindowIcon(self.app_icon)
+        self.tray: Tray | None = None
+        if Tray.available():
+            self.tray = Tray(self.app_icon, self)
+            self.tray.show_requested.connect(self.bring_to_front)
+            self.tray.pause_all_requested.connect(self._pause_all)
+            self.tray.resume_all_requested.connect(self._resume_all)
+            self.tray.open_folder_requested.connect(
+                lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(ctx.download_dir()))
+            )
+            self.tray.quit_requested.connect(self.quit_app)
+            self.tray.show()
+        self.history_recorder.recorded.connect(self._notify_download)
+        self.edit_manager.task_changed.connect(self._on_edit_changed)
+        downloads.item_changed.connect(lambda _id: self._refresh_tray_progress())
+
         self.retranslate()
         self._refresh_icons()
         self._restore_state()
@@ -187,6 +221,8 @@ class MainWindow(QMainWindow):
             item.setToolTip(tr("nav.tooltip", name=name, number=row + 1))
         for page in self.pages.values():
             page.retranslate()
+        if getattr(self, "tray", None) is not None:
+            self.tray.retranslate()  # type: ignore[union-attr]
 
     def _refresh_icons(self) -> None:
         color = self._ctx.theme.palette["muted"]
@@ -203,6 +239,14 @@ class MainWindow(QMainWindow):
         self.show_page(settings.last_page)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        if self._ctx.settings.minimize_to_tray and self.tray is not None and not self._quitting:
+            # Al cerrar, a la bandeja: las colas siguen.
+            event.ignore()
+            self.hide()
+            if not self._tray_hint_shown:
+                self._tray_hint_shown = True
+                self.tray.notify(tr("app.name"), tr("tray.still_running"))
+            return
         busy = self.downloads_page.has_active_downloads() or self.edit_manager.busy
         if busy and not self._confirm_exit():
             event.ignore()
@@ -217,7 +261,158 @@ class MainWindow(QMainWindow):
             settings.window_height = self.height()
         self._ctx.save_settings()
         self._unsubscribe()
+        if self.tray is not None:
+            self.tray.icon.hide()
         super().closeEvent(event)
+
+    # ---------------------------------------------------- integración con Windows
+
+    def quit_app(self) -> None:
+        self._quitting = True
+        if self.close():
+            QApplication.quit()
+        else:
+            self._quitting = False
+
+    def bring_to_front(self) -> None:
+        if self.isMinimized() or not self.isVisible():
+            self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _pause_all(self) -> None:
+        self.downloads_page.manager.pause_all()
+        for task in self.edit_manager.tasks():
+            self.edit_manager.pause(task.task_id)
+
+    def _resume_all(self) -> None:
+        self.downloads_page.manager.resume_all()
+        for task in self.edit_manager.tasks():
+            if task.state is EditState.PAUSED:
+                self.edit_manager.resume(task.task_id)
+
+    def handle_args(self, args: list[str]) -> None:
+        """Argumentos de la línea de comandos o de otra instancia."""
+        self.bring_to_front()
+        self.handle_command(parse_command(args))
+
+    def handle_command(self, command: AppCommand) -> None:
+        if command.download:
+            self.show_page("downloads")
+            self.downloads_page.add_text("\n".join(command.download))
+        if command.edit:
+            self._open_in_editor(command.edit)
+        if command.action and command.action_files:
+            self.run_action(command.action, command.action_files)
+
+    def run_action(self, action: str, files: list[Path]) -> None:
+        """Acciones del menú contextual: a la cola de edición, o al editor si piden datos."""
+        mapping = {
+            "convert_mp4": ChainAction("convert", "mp4"),
+            "extract_mp3": ChainAction("extract_audio", "mp3"),
+        }
+        if action == "compress":
+            self._open_in_editor(files[:1])
+            self.editor_page.tools.setCurrentIndex(4)
+            return
+        chain = mapping.get(action)
+        if chain is None and action.startswith("recipe:"):
+            chain = ChainAction("recipe", action.removeprefix("recipe:"))
+        if chain is None:
+            return
+        self.chain.queue_files(chain, files)
+        self.show_page("queue")
+        self.queue_page.tabs.setCurrentIndex(1)
+
+    def _open_in_editor(self, files: list[Path]) -> None:
+        existing = [f for f in files if f.is_file()]
+        if not existing:
+            return
+        self.show_page("editor")
+        self.editor_page.open_file(existing[0])
+        for extra in existing[1:]:
+            self.editor_page.concat_form.add_path(extra)
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        mime = event.mimeData()
+        if mime.hasUrls() or mime.hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        """Enlaces y listas .txt a Descargas; archivos de vídeo o audio al Editor."""
+        mime = event.mimeData()
+        links: list[str] = []
+        media: list[Path] = []
+        for url in mime.urls():
+            if url.isLocalFile():
+                path = Path(url.toLocalFile())
+                if path.suffix.lower() == ".txt":
+                    try:
+                        links.append(path.read_text(encoding="utf-8", errors="replace"))
+                    except OSError:
+                        continue
+                elif path.suffix.lower() in MEDIA_EXTENSIONS:
+                    media.append(path)
+            elif url.scheme() in ("http", "https"):
+                links.append(url.toString())
+        if not mime.urls() and mime.hasText():
+            links.append(mime.text())
+        if links:
+            self.show_page("downloads")
+            self.downloads_page.add_text("\n".join(links))
+        if media:
+            self._open_in_editor(media)
+        event.acceptProposedAction()
+
+    def _notify(self, title: str, message: str, path: Path | None = None) -> None:
+        if self.tray is None or not self._ctx.settings.notifications:
+            return
+
+        def open_result() -> None:
+            if path is not None and path.exists():
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+            else:
+                self.bring_to_front()
+
+        self.tray.notify(title, message, open_result)
+
+    def _notify_download(self, entry_id: int) -> None:
+        entry = self.history.get(entry_id)
+        if entry is None:
+            return
+        if entry.result == "completed":
+            self._notify(
+                tr("notify.download_done"), entry.title, entry.files[0] if entry.files else None
+            )
+        else:
+            self._notify(tr("notify.download_failed"), entry.title)
+
+    def _on_edit_changed(self, task_id: int) -> None:
+        task = self.edit_manager.task(task_id)
+        if task is None:
+            return
+        previous = self._edit_states.get(task_id)
+        self._edit_states[task_id] = task.state
+        if task.state != previous and task.state is EditState.COMPLETED:
+            self._notify(tr("notify.edit_done"), task.plan.output.name, task.plan.output)
+        elif task.state != previous and task.state is EditState.FAILED:
+            self._notify(tr("notify.edit_failed"), task.title)
+        self._refresh_tray_progress()
+
+    def _refresh_tray_progress(self) -> None:
+        if self.tray is None:
+            return
+        items = self.downloads_page.manager.queue_items()
+        active = [i for i in items if i.state in (ItemState.DOWNLOADING, ItemState.PROCESSING)]
+        fractions = [i.snapshot.fraction for i in active if i.snapshot and i.snapshot.fraction]
+        edits = sum(t.state is EditState.RUNNING for t in self.edit_manager.tasks())
+        parts: list[str] = []
+        if active:
+            mean = round(sum(fractions) / len(fractions) * 100) if fractions else 0
+            parts.append(tr("tray.progress.downloads", count=len(active), percent=mean))
+        if edits:
+            parts.append(tr("tray.progress.edits", count=edits))
+        self.tray.set_progress(" · ".join(parts))
 
     def startup_checks(self) -> None:
         """Tras mostrar la ventana: dependencias que faltan y comprobación de actualizaciones."""

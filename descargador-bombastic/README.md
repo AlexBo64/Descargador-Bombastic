@@ -4,7 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 8 (Actualizaciones).** yt-dlp y ffmpeg se actualizan desde la app (con
+> **Estado: Fase 9 (Integración con Windows).** Bandeja, notificaciones, instancia única,
+> línea de comandos, arrastrar y soltar en toda la ventana y menú contextual del Explorador.
+>
+> **Fase 8 (Actualizaciones):** yt-dlp y ffmpeg se actualizan desde la app (con
 > SHA-256 y vuelta atrás), aviso de versión nueva de la app y asistente si falta algo.
 >
 > **Fase 7 (Perfiles, historial y encadenado):** Perfiles de opciones, historial con
@@ -92,6 +95,14 @@ Qué comprobar:
     comprobar al arrancar, "Actualizar yt-dlp" y "Descargar o actualizar ffmpeg". Si hay versión
     nueva aparece un aviso arriba con un botón para actualizar.
 24. Si falta yt-dlp o ffmpeg al arrancar, un asistente ofrece descargarlos a la carpeta de datos.
+25. Arrastra enlaces o un `.txt` con enlaces a cualquier parte de la ventana (van a Descargas) o
+    archivos de vídeo/audio (van al Editor).
+26. Icono en la bandeja con mostrar, pausar/reanudar colas, abrir la carpeta y salir; el
+    tooltip muestra el progreso. En **Ajustes → Windows**: seguir en la bandeja al cerrar,
+    notificaciones (clic para abrir el resultado) y añadir/quitar el menú contextual.
+27. Línea de comandos: `python -m bombastic --download <url>`, `--edit <archivo>` y
+    `--action convert_mp4|extract_mp3|compress|"recipe:<nombre>" <archivos…>`. Si la app ya
+    está abierta, los argumentos se pasan a esa ventana.
 
 ### Modo portable
 
@@ -146,11 +157,14 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 6 | Modo experto y recetas | Hecha |
 | 7 | Perfiles, historial y encadenado | Hecha |
 | 8 | Actualizaciones | Hecha |
-| 9 | Integración con Windows | Pendiente |
+| 9 | Integración con Windows | Hecha |
 | 10 | Distribución (instalador, portable, GitHub Actions de release) | Pendiente |
 | 11 | Pulido y manual de usuario | Pendiente |
 
 ## Preguntas frecuentes
+
+**No veo el menú contextual en Windows 11.** Está en "Mostrar más opciones" (o Mayús + clic
+derecho). El menú moderno de Windows 11 exige un paquete MSIX y no se incluye.
 
 **yt-dlp no descarga o da errores raros.** Las webs cambian a menudo: actualiza yt-dlp en
 Ajustes → Actualizaciones (o con el aviso que sale al arrancar). Si sigue fallando, prueba el

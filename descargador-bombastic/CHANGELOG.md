@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.10.0 — Fase 9: Integración con Windows
+
+- Arrastrar y soltar en toda la ventana: enlaces y `.txt` a Descargas; vídeo y audio al Editor.
+- Bandeja del sistema: mostrar, pausar o reanudar todas las colas, abrir la carpeta de
+  descargas y salir; tooltip con el progreso global y opción de seguir en la bandeja al cerrar.
+- Notificaciones al terminar o fallar una descarga o edición; clic para abrir el resultado.
+  Se pueden desactivar.
+- Instancia única con `QLocalServer`: una segunda instancia pasa sus argumentos a la abierta.
+- Línea de comandos `--download`, `--edit` y `--action` (`convert_mp4`, `extract_mp3`,
+  `compress`, `recipe:<nombre>`).
+- Menú contextual del Explorador en `HKCU\Software\Classes\SystemFileAssociations\<ext>`
+  (sin administrador): editar, convertir a MP4, extraer MP3, comprimir y recetas favoritas.
+  Desde Ajustes (no en la portable); el instalador lo registrará en la Fase 10.
+- Icono propio de la app.
+- No incluido: progreso en el icono de la barra de tareas (opcional; Qt 6 no lo ofrece).
+
 ## 0.9.0 — Fase 8: Actualizaciones
 
 - yt-dlp: comprobación al arrancar (cada 24 h por defecto, configurable o nunca) contra la

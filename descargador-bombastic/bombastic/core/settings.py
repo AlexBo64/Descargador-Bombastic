@@ -87,6 +87,9 @@ class Settings:
     update_check_hours: int = 24
     last_update_check: str = ""
     app_update_repo: str = DEFAULT_APP_REPO
+    #: Integración con Windows.
+    minimize_to_tray: bool = False
+    notifications: bool = True
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""

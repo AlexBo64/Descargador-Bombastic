@@ -157,6 +157,13 @@ class ChainRunner(QObject):
         prober.failed.connect(lambda path, _reason: self._waiting.pop(path, None))
         edits.task_completed.connect(self._on_task_completed)
 
+    def queue_files(self, action: ChainAction, files: list[Path]) -> None:
+        """Aplica una acción a archivos sueltos (menú contextual o ``--action``)."""
+        for file in files:
+            if file.is_file():
+                self._waiting[str(file)] = (action, file.name, 0)
+                self._prober.probe(file)
+
     def _on_item_changed(self, item_id: int) -> None:
         item = self._downloads.item(item_id)
         if item is None or item.options is None:
@@ -188,7 +195,8 @@ class ChainRunner(QObject):
             log.warning("Chained action %s does not fit %s", action, source)
             return
         task_id = self._edits.add(f"{title} → {plan.tool}", plan)
-        self.task_download[task_id] = item_id
+        if item_id:
+            self.task_download[task_id] = item_id
         if action.delete_original:
             self._delete_after[task_id] = source
 
