@@ -571,5 +571,21 @@
   "notify.download_done": "Download finished",
   "notify.download_failed": "Download failed",
   "notify.edit_done": "Edit finished",
-  "notify.edit_failed": "Edit failed"
+  "notify.edit_failed": "Edit failed",
+  "wizard.title": "Welcome to {name}",
+  "wizard.look.title": "Language and look",
+  "wizard.folder.title": "Downloads folder",
+  "wizard.folder.text": "Downloads will be saved here. You can change it anytime in Downloads or Settings.",
+  "wizard.deps.page": "Required programs",
+  "wizard.deps.ok": "yt-dlp and ffmpeg are installed. All set!",
+  "wizard.deps.missing": "Missing: {names}. When you finish you can download them with one click.",
+  "about.open": "About…",
+  "about.title": "About {name}",
+  "about.component": "{name}: {version}",
+  "about.licenses": "View third-party licenses",
+  "about.notice": "You are responsible for respecting copyright and each site's terms of use. Only download content you have the right to keep.",
+  "settings.shortcuts.paste": "Ctrl+V (in Downloads, outside the text field): paste and add links",
+  "settings.shortcuts.player": "Space: play or pause (in the Editor) · Arrows: ±1 s · Shift+arrows: ±5 s",
+  "settings.shortcuts.markers": "I / O: mark the start and end of the range",
+  "settings.shortcuts.frames": "Comma / period: previous or next frame (approximate)"
 }

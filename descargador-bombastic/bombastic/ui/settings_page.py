@@ -35,6 +35,7 @@ from bombastic.core.recipes import RecipeStore
 from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
 from bombastic.core.ytdlp_runner import CatalogRefresher, default_launcher
 from bombastic.platform_win import context_menu
+from bombastic.ui.first_run import AboutDialog
 from bombastic.ui.pages import Page
 from bombastic.ui.updates import Updates, UpdatesBox
 
@@ -219,6 +220,9 @@ class SettingsPage(Page):
         shortcuts = QVBoxLayout(self.shortcuts_box)
         self.shortcuts_label = QLabel()
         shortcuts.addWidget(self.shortcuts_label)
+        self.about_button = QPushButton()
+        self.about_button.clicked.connect(self.show_about)
+        shortcuts.addWidget(self.about_button, 0, Qt.AlignmentFlag.AlignLeft)
         column.addWidget(self.shortcuts_box)
         column.addStretch(1)
 
@@ -302,8 +306,12 @@ class SettingsPage(Page):
 
         self.shortcuts_box.setTitle(tr("settings.shortcuts"))
         self.shortcuts_label.setText(
-            "\n".join((tr("settings.shortcuts.navigation"), tr("settings.shortcuts.downloads")))
+            "\n".join(
+                tr(f"settings.shortcuts.{key}")
+                for key in ("navigation", "downloads", "paste", "player", "markers", "frames")
+            )
         )
+        self.about_button.setText(tr("about.open"))
 
     @staticmethod
     def _fill_combo(combo: QComboBox, values: tuple[str, ...], prefix: str, current: str) -> None:
@@ -355,6 +363,15 @@ class SettingsPage(Page):
         settings.rate_limit = rate
         self._ctx.save_settings()
         self.queue_settings_changed.emit()
+
+    def show_about(self) -> AboutDialog:
+        versions: dict[str, str] = {}
+        for tool in Tool:
+            status = self._statuses.get(tool) if self._statuses else None
+            versions[tool.value] = status.version or "" if status is not None else ""
+        dialog = AboutDialog(versions, parent=self)
+        dialog.open()
+        return dialog
 
     def _on_windows_changed(self) -> None:
         settings = self._ctx.settings

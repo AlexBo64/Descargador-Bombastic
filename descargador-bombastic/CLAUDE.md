@@ -6,6 +6,7 @@ y ffmpeg. Se construye por fases.
 - Especificación completa: `docs/ESPECIFICACION.md` (léela antes de empezar una fase).
 - Arquitectura, decisiones y riesgos: `docs/ARQUITECTURA.md`.
 - Estado actual y lo hecho en cada fase: `CHANGELOG.md` y la hoja de ruta del `README.md`.
+- Las 12 fases (0–11) están hechas; los cambios nuevos se hacen sobre la versión 1.0.
 - Para empezar una fase usa la skill `/nueva-fase`.
 
 ## Comandos

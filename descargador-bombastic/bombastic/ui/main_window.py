@@ -15,6 +15,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -44,6 +45,7 @@ from bombastic.platform_win.context_menu import MEDIA_EXTENSIONS
 from bombastic.platform_win.tray import Tray
 from bombastic.ui.downloads_page import DownloadsPage
 from bombastic.ui.editor_page import EditorPage
+from bombastic.ui.first_run import FirstRunWizard
 from bombastic.ui.history_page import HistoryPage
 from bombastic.ui.library_page import LibraryPage
 from bombastic.ui.pages import Page, PlaceholderPage
@@ -415,13 +417,31 @@ class MainWindow(QMainWindow):
         self.tray.set_progress(" · ".join(parts))
 
     def startup_checks(self) -> None:
-        """Tras mostrar la ventana: dependencias que faltan y comprobación de actualizaciones."""
-        if DependencyWizard.missing(self._ctx):
+        """Tras mostrar la ventana: primer arranque, dependencias y actualizaciones."""
+        if not self._ctx.settings.first_run_done:
+            self.run_first_wizard()
+        elif DependencyWizard.missing(self._ctx):
             wizard = DependencyWizard(self._ctx, self.settings_page.updates, self)
             wizard.open()
         settings = self._ctx.settings
         if should_check(settings.last_update_check, settings.update_check_hours):
             self.settings_page.updates.check()
+
+    def run_first_wizard(self) -> FirstRunWizard:
+        wizard = FirstRunWizard(self._ctx, self)
+
+        def finished(result: int) -> None:
+            if result != QDialog.DialogCode.Accepted:
+                return
+            self.downloads_page.set_download_dir(self._ctx.download_dir())
+            if wizard.wants_context_menu:
+                self.settings_page.toggle_context_menu()
+            if DependencyWizard.missing(self._ctx):
+                DependencyWizard(self._ctx, self.settings_page.updates, self).open()
+
+        wizard.finished.connect(finished)
+        wizard.open()
+        return wizard
 
     def _apply_profile(self, profile_id: int) -> None:
         profile = self.profiles.get(profile_id)

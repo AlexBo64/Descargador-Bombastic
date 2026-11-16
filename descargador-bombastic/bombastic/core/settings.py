@@ -90,6 +90,8 @@ class Settings:
     #: Integración con Windows.
     minimize_to_tray: bool = False
     notifications: bool = True
+    #: El asistente del primer arranque ya se ha completado.
+    first_run_done: bool = False
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""

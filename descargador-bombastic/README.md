@@ -4,34 +4,10 @@ Aplicación de escritorio para Windows 10/11 que pone una interfaz gráfica a
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (descargas) y a [ffmpeg](https://ffmpeg.org) (edición
 de vídeo y audio).
 
-> **Estado: Fase 10 (Distribución).** Instalador, versión portable y build reproducible con
-> GitHub Actions.
->
-> **Fase 9 (Integración con Windows):** Bandeja, notificaciones, instancia única,
-> línea de comandos, arrastrar y soltar en toda la ventana y menú contextual del Explorador.
->
-> **Fase 8 (Actualizaciones):** yt-dlp y ffmpeg se actualizan desde la app (con
-> SHA-256 y vuelta atrás), aviso de versión nueva de la app y asistente si falta algo.
->
-> **Fase 7 (Perfiles, historial y encadenado):** Perfiles de opciones, historial con
-> búsqueda y acciones de edición encadenadas a cada descarga.
->
-> **Fase 6 (Modo experto y recetas):** Comandos de ffmpeg a mano con variables,
-> lista de filtros, recetas reutilizables y "Abrir en modo experto" desde cualquier herramienta.
->
-> **Fase 5 (Editor completo):** Las 14 herramientas del editor, previsualización del
-> resultado, copia ligera para formatos que el reproductor no abre y aceleración por hardware.
->
-> **Fase 4 (Editor básico):** Editor con reproductor, marcadores I/O y las
-> herramientas convertir, recortar, varios tramos, unir y comprimir, con cola de edición.
->
-> **Fase 3 (Modo avanzado de yt-dlp):** Además de lo anterior, todas las opciones
-> de yt-dlp, cookies, argumentos libres y selector manual de formatos.
->
-> **Fase 2 (Cola):** Se pegan enlaces, se ve su información y se descargan con
-> progreso en varios formatos, en una cola persistente con descargas simultáneas, pausa,
-> reanudación, reintentos y errores explicados en español. El modo avanzado y el editor llegan
-> en las fases siguientes.
+> **Estado: versión 1.0.** Las 12 fases del plan están hechas: descargas con todas las
+> opciones de yt-dlp, cola, editor completo con ffmpeg, modo experto y recetas, perfiles,
+> historial, acciones encadenadas, actualizaciones, integración con Windows e instalador.
+> Guía paso a paso: [docs/manual_usuario.md](docs/manual_usuario.md).
 
 ## Instalación (usuarios)
 
@@ -193,7 +169,7 @@ En el código se usan con `tr("clave")`. Un test falla si a un idioma le falta u
 | 8 | Actualizaciones | Hecha |
 | 9 | Integración con Windows | Hecha |
 | 10 | Distribución (instalador, portable, GitHub Actions de release) | Hecha |
-| 11 | Pulido y manual de usuario | Pendiente |
+| 11 | Pulido y manual de usuario | Hecha |
 
 ## Preguntas frecuentes
 
@@ -212,8 +188,8 @@ derecho). El menú moderno de Windows 11 exige un paquete MSIX y no se incluye.
 Ajustes → Actualizaciones (o con el aviso que sale al arrancar). Si sigue fallando, prueba el
 canal nightly.
 
-Las entradas sobre SmartScreen, antivirus, cookies y "yt-dlp no descarga" se añadirán cuando
-existan las funciones correspondientes (fases 1, 3, 8 y 10).
+**Un vídeo pide iniciar sesión o tiene restricción de edad.** Activa las cookies en
+Descargas → Opciones avanzadas → Cookies (de tu navegador o de un `cookies.txt`).
 
 ## Aviso
 

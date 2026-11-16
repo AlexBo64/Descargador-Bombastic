@@ -6,7 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut, QShowEvent
+from PySide6.QtGui import QDesktopServices, QGuiApplication, QKeySequence, QShortcut, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -218,6 +218,10 @@ class DownloadsPage(Page):
 
         # --- Conexiones ---
         self.add_button.clicked.connect(self.add_from_input)
+        # Ctrl+V fuera del campo de texto: pegar los enlaces del portapapeles y añadirlos.
+        paste = QShortcut(QKeySequence.StandardKey.Paste, self)
+        paste.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        paste.activated.connect(self.paste_and_add)
         for sequence in ("Ctrl+Return", "Ctrl+Enter"):
             shortcut = QShortcut(QKeySequence(sequence), self)
             shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
@@ -580,6 +584,13 @@ class DownloadsPage(Page):
     def add_from_input(self) -> None:
         """Añade a la lista los enlaces escritos o pegados en el campo."""
         self.add_text(self.url_input.toPlainText())
+
+    def paste_and_add(self) -> list[int]:
+        """Añade los enlaces del portapapeles (``Ctrl+V`` con el foco fuera del campo)."""
+        if self.url_input.hasFocus():
+            self.url_input.paste()
+            return []
+        return self.add_text(QGuiApplication.clipboard().text())
 
     def add_text(self, text: str) -> list[int]:
         urls = extract_urls(text)

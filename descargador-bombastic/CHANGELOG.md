@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0 — Fase 11: Pulido
+
+- Asistente de primer arranque: idioma y tema (en vivo), carpeta de descargas, comprobación de
+  yt-dlp y ffmpeg con descarga de lo que falte y menú contextual (en la portable se explica que
+  lo añade el instalador).
+- Ventana "Acerca de" con la versión de la app, de yt-dlp, de ffmpeg y de ffprobe, las licencias
+  y el aviso sobre derechos de autor.
+- Teclado: `Ctrl+V` fuera del campo pega y añade enlaces; todos los atajos (navegación,
+  descargas, reproductor, marcadores, fotogramas) están en Ajustes → Atajos.
+- Rendimiento comprobado con 150 elementos en la cola (≈0,3 ms por actualización de progreso)
+  con un test que lo vigila.
+- Revisión de las 589 traducciones (español e inglés) y test de que todas las páginas se
+  retraducen.
+- Test de integración opcional (`pytest -m integration`): descarga 5 s de un vídeo con licencia
+  libre y lo convierte a MP3 con yt-dlp y ffmpeg reales.
+- Manual de usuario en `docs/manual_usuario.md`.
+
 ## 0.11.0 — Fase 10: Distribución
 
 - `build/DescargadorBombastic.spec` (PyInstaller `--onedir`, sin UPX, icono e información de
