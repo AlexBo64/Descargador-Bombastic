@@ -22,6 +22,32 @@ class PlaylistEntry:
 
 
 @dataclass(frozen=True)
+class FormatInfo:
+    """Un formato disponible de un vídeo (una fila de la tabla de formatos)."""
+
+    format_id: str
+    ext: str
+    width: int | None = None
+    height: int | None = None
+    fps: float | None = None
+    vcodec: str = ""
+    acodec: str = ""
+    #: Kbit/s.
+    bitrate: float | None = None
+    #: Bytes (exactos o aproximados).
+    size: float | None = None
+    note: str = ""
+
+    @property
+    def has_video(self) -> bool:
+        return bool(self.vcodec) and self.vcodec != "none"
+
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.acodec) and self.acodec != "none"
+
+
+@dataclass(frozen=True)
 class MediaInfo:
     url: str
     media_id: str
@@ -37,6 +63,8 @@ class MediaInfo:
     extractor: str
     #: Elementos de la lista, si yt-dlp los ha enumerado.
     entries: tuple[PlaylistEntry, ...] = ()
+    #: Formatos disponibles (solo vídeos sueltos; no se guardan en la base de datos).
+    formats: tuple[FormatInfo, ...] = ()
 
 
 def _text(value: Any) -> str:
@@ -84,6 +112,38 @@ def _entries(raw: Any) -> tuple[PlaylistEntry, ...]:
             continue
         title = _text(entry.get("title")) or _text(entry.get("url")) or f"#{index}"
         result.append(PlaylistEntry(index, title, _number(entry.get("duration"))))
+    return tuple(result)
+
+
+def _integer(value: Any) -> int | None:
+    number = _number(value)
+    return int(number) if number is not None else None
+
+
+def _formats(raw: Any) -> tuple[FormatInfo, ...]:
+    if not isinstance(raw, list):
+        return ()
+    result: list[FormatInfo] = []
+    for entry in raw:
+        if not isinstance(entry, dict) or not _text(entry.get("format_id")):
+            continue
+        # Las "storyboards" (imágenes de vista previa) no son formatos descargables útiles.
+        if _text(entry.get("format_note")) == "storyboard" or entry.get("ext") == "mhtml":
+            continue
+        result.append(
+            FormatInfo(
+                format_id=_text(entry.get("format_id")),
+                ext=_text(entry.get("ext")),
+                width=_integer(entry.get("width")),
+                height=_integer(entry.get("height")),
+                fps=_number(entry.get("fps")),
+                vcodec=_text(entry.get("vcodec")),
+                acodec=_text(entry.get("acodec")),
+                bitrate=_number(entry.get("tbr")),
+                size=_number(entry.get("filesize")) or _number(entry.get("filesize_approx")),
+                note=_text(entry.get("format_note")),
+            )
+        )
     return tuple(result)
 
 
@@ -135,6 +195,7 @@ def parse_media_info(output: str, fallback_url: str) -> MediaInfo:
         is_live=data.get("live_status") == "is_live" or data.get("is_live") is True,
         extractor=_text(data.get("extractor_key")) or _text(data.get("extractor")),
         entries=entries,
+        formats=() if is_playlist else _formats(data.get("formats")),
     )
 
 

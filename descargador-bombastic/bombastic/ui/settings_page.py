@@ -28,6 +28,7 @@ from bombastic.core.binaries import BinaryStatus, Tool, locate_all
 from bombastic.core.binary_probe import BinaryProbe
 from bombastic.core.i18n import tr
 from bombastic.core.settings import LANGUAGES, THEMES, is_valid_rate
+from bombastic.core.ytdlp_runner import CatalogRefresher, default_launcher
 from bombastic.ui.pages import Page
 
 
@@ -120,9 +121,14 @@ class SettingsPage(Page):
         deps.addWidget(self.dependencies_hint)
         self.recheck_button = QPushButton()
         self.open_bin_button = QPushButton()
+        self.catalog_button = QPushButton()
+        self.catalog_status = QLabel()
+        self.catalog_status.setProperty("muted", True)
         row = QHBoxLayout()
         row.addWidget(self.recheck_button)
         row.addWidget(self.open_bin_button)
+        row.addWidget(self.catalog_button)
+        row.addWidget(self.catalog_status)
         row.addStretch(1)
         deps.addLayout(row)
         column.addWidget(self.dependencies_box)
@@ -167,6 +173,7 @@ class SettingsPage(Page):
         self.retries_spin.valueChanged.connect(self._on_queue_settings_changed)
         self.rate_edit.editingFinished.connect(self._on_queue_settings_changed)
         self.recheck_button.clicked.connect(self.refresh_dependencies)
+        self.catalog_button.clicked.connect(self.refresh_catalog)
         self.open_bin_button.clicked.connect(lambda: self._open_folder(ctx.paths.bin_dir))
         self.open_logs_button.clicked.connect(lambda: self._open_folder(ctx.paths.logs_dir))
 
@@ -198,6 +205,8 @@ class SettingsPage(Page):
         self.dependencies_hint.setText(tr("settings.dependencies.hint"))
         self.recheck_button.setText(tr("settings.dependencies.recheck"))
         self.open_bin_button.setText(tr("settings.dependencies.open_bin"))
+        self.catalog_button.setText(tr("settings.catalog.refresh"))
+        self.catalog_button.setToolTip(tr("settings.catalog.refresh.tooltip"))
         self._render_statuses()
 
         self.data_box.setTitle(tr("settings.data"))
@@ -280,6 +289,24 @@ class SettingsPage(Page):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     # -------------------------------------------------------------- dependencias
+
+    def refresh_catalog(self) -> None:
+        """Regenera la lista de opciones del modo avanzado con el yt-dlp instalado."""
+        self.catalog_button.setEnabled(False)
+        self.catalog_status.setText(tr("settings.catalog.working"))
+        refresher = CatalogRefresher(
+            default_launcher(self._ctx.paths), self._ctx.paths.data_dir, parent=self
+        )
+
+        def done(ok: bool) -> None:
+            self.catalog_button.setEnabled(True)
+            self.catalog_status.setText(
+                tr("settings.catalog.done" if ok else "settings.catalog.failed")
+            )
+            refresher.deleteLater()
+
+        refresher.finished.connect(done)
+        refresher.start()
 
     def refresh_dependencies(self) -> None:
         """Busca los ejecutables y pregunta su versión sin bloquear la interfaz."""

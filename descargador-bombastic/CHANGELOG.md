@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — Fase 3: Modo avanzado de yt-dlp
+
+- Catálogo de opciones generado a partir de `yt-dlp --help` (`build/gen_ytdlp_options.py` →
+  `resources/ytdlp_options.json`, 255 opciones de yt-dlp 2026.08.19) y regenerable desde
+  Ajustes con el yt-dlp instalado. Si el parseo falla se usa el incluido.
+- Diálogo "Opciones avanzadas…": una pestaña por grupo de yt-dlp, casilla o campo (con
+  selector de archivo o carpeta) por opción, flag real y ayuda (traducida al español en 115
+  opciones), buscador, opciones modificadas en negrita y restablecer por grupo o en total.
+- Argumentos libres con validación de comillas y vista previa del comando final.
+- Avisos de conflictos: extraer audio sin ffmpeg, `--merge-output-format` con audio, `-o`/`-P`
+  y `-f` que sustituyen a los de la app.
+- Cookies (desactivadas por defecto): de Chrome, Edge, Firefox, Brave, Opera o Vivaldi con
+  perfil opcional, o de un `cookies.txt`, con explicación en la interfaz.
+- Selector manual de formatos: tabla con id, extensión, resolución, fps, códecs, bitrate y
+  tamaño; se elige vídeo y audio por separado y la app construye el `-f`.
+
 ## 0.3.0 — Fase 2: Cola
 
 - Página **Cola**: lo que se manda a descargar pasa de Descargas a la Cola, con estado, barra de

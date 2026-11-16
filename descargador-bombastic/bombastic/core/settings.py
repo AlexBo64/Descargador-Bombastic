@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import os
@@ -10,7 +11,13 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 
-from bombastic.core.ytdlp_command import DEFAULT_MP3_QUALITY, MP3_QUALITIES, Preset
+from bombastic.core.ytdlp_command import (
+    COOKIE_BROWSERS,
+    COOKIE_MODES,
+    DEFAULT_MP3_QUALITY,
+    MP3_QUALITIES,
+    Preset,
+)
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +59,14 @@ class Settings:
     auto_retries: int = 2
     #: Límite global de velocidad para yt-dlp (``500K``, ``2M``…); vacío = sin límite.
     rate_limit: str = ""
+    #: Modo avanzado: valor de cada opción de yt-dlp por su flag (``True`` o un texto).
+    advanced_options: dict[str, bool | str] = dataclasses.field(default_factory=dict)
+    #: Argumentos de yt-dlp escritos a mano.
+    extra_args: str = ""
+    cookies_mode: str = "off"
+    cookies_browser: str = "chrome"
+    cookies_profile: str = ""
+    cookies_file: str = ""
 
     def sanitize(self) -> None:
         """Corrige valores fuera de rango (archivo editado a mano o de otra versión)."""
@@ -66,6 +81,15 @@ class Settings:
             self.download_preset = defaults.download_preset
         if self.mp3_quality not in MP3_QUALITIES:
             self.mp3_quality = defaults.mp3_quality
+        self.advanced_options = {
+            key: value
+            for key, value in self.advanced_options.items()
+            if isinstance(key, str) and key.startswith("-") and isinstance(value, (bool, str))
+        }
+        if self.cookies_mode not in COOKIE_MODES:
+            self.cookies_mode = defaults.cookies_mode
+        if self.cookies_browser not in COOKIE_BROWSERS:
+            self.cookies_browser = defaults.cookies_browser
         self.max_concurrent = max(1, min(self.max_concurrent, 8))
         self.auto_retries = max(0, min(self.auto_retries, 10))
         if not is_valid_rate(self.rate_limit):

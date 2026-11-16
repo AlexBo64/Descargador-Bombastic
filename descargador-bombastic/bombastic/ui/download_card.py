@@ -154,6 +154,7 @@ class DownloadCard(QFrame):
     pause_toggled = Signal(int)
     #: ``(id, acción)`` con una acción de :data:`MENU_ACTIONS`.
     menu_requested = Signal(int, str)
+    formats_requested = Signal(int)
 
     def __init__(self, item: DownloadItem, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -179,6 +180,7 @@ class DownloadCard(QFrame):
 
         self.download_button = QPushButton()
         self.download_button.setProperty("primary", True)
+        self.formats_button = QPushButton()
         self.pause_button = QPushButton()
         self.cancel_button = QPushButton()
         self.open_button = QPushButton()
@@ -198,6 +200,7 @@ class DownloadCard(QFrame):
         buttons.setSpacing(8)
         for button in (
             self.download_button,
+            self.formats_button,
             self.pause_button,
             self.cancel_button,
             self.open_button,
@@ -224,6 +227,7 @@ class DownloadCard(QFrame):
         layout.addLayout(column, 1)
 
         self.download_button.clicked.connect(self._on_primary)
+        self.formats_button.clicked.connect(lambda: self.formats_requested.emit(self.item_id))
         self.pause_button.clicked.connect(lambda: self.pause_toggled.emit(self.item_id))
         self.cancel_button.clicked.connect(lambda: self.cancel_requested.emit(self.item_id))
         self.open_button.clicked.connect(lambda: self.open_folder_requested.emit(self.item_id))
@@ -302,6 +306,11 @@ class DownloadCard(QFrame):
             # Sin dato de avance (o procesando): barra animada.
             self.progress_bar.setRange(0, 0)
 
+        self.formats_button.setText(tr("downloads.card.formats"))
+        self.formats_button.setToolTip(tr("downloads.card.formats.tooltip"))
+        self.formats_button.setVisible(
+            state is ItemState.READY and item.info is not None and bool(item.info.formats)
+        )
         self.pause_button.setText(
             tr("downloads.card.resume" if state is ItemState.PAUSED else "downloads.card.pause")
         )

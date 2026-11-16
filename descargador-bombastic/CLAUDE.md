@@ -46,6 +46,8 @@ Una fase no está terminada hasta que `ruff check .`, `ruff format --check .`, `
 - Traducciones en catálogos JSON propios, no `.ts/.qm` de Qt.
 - El código vive dentro del paquete `bombastic/` (`bombastic/core`, `bombastic/ui`…).
 - La salida de PyInstaller irá a `out/`; `build/` queda para los scripts.
+- Catálogo de opciones de yt-dlp: se genera parseando `yt-dlp --help` también en la compilación,
+  en vez de importar `yt_dlp.options` de pip. Un solo parser para compilación y ejecución.
 - Plantilla de progreso de yt-dlp: se usa la conversión `j`, pero los campos sin valor siguen
   saliendo como `NA` sin comillas; `core/ytdlp_progress.py` los convierte en `null`.
 

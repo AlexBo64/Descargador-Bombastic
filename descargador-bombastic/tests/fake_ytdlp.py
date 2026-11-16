@@ -11,6 +11,8 @@ palabras que aparezcan en el enlace:
 - ``flaky``: la descarga falla con un error de red (se reintenta sola).
 - ``slowinfo``: la consulta de metadatos no termina nunca.
 - ``slow``: la descarga no termina nunca (para probar cancelaciones).
+
+``--version`` y ``--help`` devuelven una versión inventada y la ayuda de ``fixtures/``.
 """
 
 from __future__ import annotations
@@ -69,6 +71,39 @@ def info(url: str) -> int:
             "webpage_url": url,
             "extractor_key": "Fake",
             "live_status": "not_live",
+            "formats": [
+                {"format_id": "sb0", "ext": "mhtml", "format_note": "storyboard"},
+                {
+                    "format_id": "140",
+                    "ext": "m4a",
+                    "vcodec": "none",
+                    "acodec": "mp4a.40.2",
+                    "tbr": 129.5,
+                    "filesize": 1_200_000,
+                    "format_note": "medium",
+                },
+                {
+                    "format_id": "137",
+                    "ext": "mp4",
+                    "vcodec": "avc1.640028",
+                    "acodec": "none",
+                    "width": 1920,
+                    "height": 1080,
+                    "fps": 30,
+                    "tbr": 4400.1,
+                    "filesize_approx": 41_000_000,
+                },
+                {
+                    "format_id": "18",
+                    "ext": "mp4",
+                    "vcodec": "avc1.42001E",
+                    "acodec": "mp4a.40.2",
+                    "width": 640,
+                    "height": 360,
+                    "fps": 30,
+                    "tbr": 600,
+                },
+            ],
         }
     out(json.dumps(data))
     return 0
@@ -126,6 +161,13 @@ def download(args: list[str], url: str) -> int:
 
 
 def main(argv: list[str]) -> int:
+    if argv == ["--version"]:
+        out("2099.01.01")
+        return 0
+    if argv == ["--help"]:
+        help_file = Path(__file__).with_name("fixtures") / "ytdlp_help.txt"
+        out(help_file.read_text(encoding="utf-8"))
+        return 0
     url = argv[-1]
     if "-J" in argv:
         return info(url)

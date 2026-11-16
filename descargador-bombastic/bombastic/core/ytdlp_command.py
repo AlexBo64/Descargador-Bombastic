@@ -53,6 +53,10 @@ class DownloadOptions:
     ffmpeg_dir: Path | None = None
     #: Límite de velocidad de ``--limit-rate`` (por ejemplo ``2M``); vacío = sin límite.
     rate_limit: str = ""
+    #: Formato elegido a mano (``-f``) en el selector de formatos; sustituye al del preset.
+    format_spec: str = ""
+    #: Argumentos del modo avanzado, las cookies y los argumentos libres, en ese orden.
+    extra_args: tuple[str, ...] = ()
 
 
 def options_to_dict(options: DownloadOptions) -> dict[str, Any]:
@@ -76,11 +80,28 @@ def options_from_dict(data: Any) -> DownloadOptions | None:
         raw, default = data[field.name], getattr(defaults, field.name)
         if field.name == "ffmpeg_dir":
             values[field.name] = Path(raw) if isinstance(raw, str) else None
+        elif isinstance(default, tuple):
+            if isinstance(raw, list) and all(isinstance(a, str) for a in raw):
+                values[field.name] = tuple(raw)
         elif isinstance(default, Preset):
             values[field.name] = Preset(raw) if raw in {p.value for p in Preset} else default
         elif type(raw) is type(default):
             values[field.name] = raw
     return DownloadOptions(defaults.output_dir, **values)
+
+
+#: Navegadores de ``--cookies-from-browser`` que se ofrecen en la interfaz.
+COOKIE_BROWSERS: tuple[str, ...] = ("chrome", "edge", "firefox", "brave", "opera", "vivaldi")
+COOKIE_MODES: tuple[str, ...] = ("off", "browser", "file")
+
+
+def cookie_args(mode: str, browser: str, profile: str, file: str) -> list[str]:
+    """Argumentos de cookies según lo elegido (desactivado por defecto)."""
+    if mode == "browser" and browser in COOKIE_BROWSERS:
+        return ["--cookies-from-browser", f"{browser}:{profile}" if profile.strip() else browser]
+    if mode == "file" and file.strip():
+        return ["--cookies", file.strip()]
+    return []
 
 
 def is_audio(preset: Preset) -> bool:
@@ -132,7 +153,10 @@ def build_download_args(url: str, options: DownloadOptions) -> list[str]:
         args += ["--ffmpeg-location", str(options.ffmpeg_dir)]
     if options.rate_limit:
         args += ["--limit-rate", options.rate_limit]
-    args += _format_args(options)
+    if options.format_spec:
+        args += ["-f", options.format_spec]
+    else:
+        args += _format_args(options)
     if options.embed_subs and not is_audio(options.preset):
         args += ["--embed-subs", "--sub-langs", "all,-live_chat"]
     if options.embed_extras:
@@ -141,5 +165,7 @@ def build_download_args(url: str, options: DownloadOptions) -> list[str]:
         if options.preset is not Preset.WAV:
             args.append("--embed-thumbnail")
     template = PLAYLIST_OUTPUT_TEMPLATE if options.playlist else DEFAULT_OUTPUT_TEMPLATE
-    args += ["-P", str(options.output_dir), "-o", template, "--", url]
+    args += ["-P", str(options.output_dir), "-o", template]
+    # Al final, para que lo que el usuario pide a mano gane a lo que pone la app.
+    args += [*options.extra_args, "--", url]
     return args

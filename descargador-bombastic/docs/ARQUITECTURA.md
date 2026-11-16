@@ -56,6 +56,21 @@ UI ──señales──▶ gestor de cola (core) ──▶ constructor de comand
 - Un `QProcess` nunca se borra con el proceso vivo (Qt aborta más tarde): las consultas
   canceladas se borran al recibir la señal de fin y al cerrar la app se espera a que mueran.
 
+## Modo avanzado (Fase 3)
+
+| Módulo | Qué hace |
+|---|---|
+| `core/ytdlp_options.py` | Parser de `--help`, catálogo JSON, argumentos del modo avanzado y libres, conflictos |
+| `build/gen_ytdlp_options.py` | Genera el catálogo incluido con el `yt-dlp` de la compilación |
+| `resources/ytdlp_help_es.json` | Nombres de grupo y ayuda en español de las opciones más usadas |
+| `ui/advanced_dialog.py` | Diálogo dinámico por grupos, cookies, argumentos libres y vista previa |
+| `ui/formats_dialog.py` | Tabla de formatos y construcción del `-f` |
+
+- Orden de los argumentos: los de la app, después cookies, modo avanzado y libres. Así lo que
+  el usuario pide a mano gana (yt-dlp se queda con el último valor de cada opción).
+- Se ocultan las opciones que romperían la lectura de la salida (`--print`, `--quiet`,
+  `--progress-template`…) y los alias de presets (`-t`).
+
 ## Decisiones
 
 - **Traducciones en JSON**, no `.ts/.qm`: sin paso de compilación, cambio en caliente sencillo,

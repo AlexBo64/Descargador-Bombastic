@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
@@ -26,6 +27,7 @@ from bombastic.context import AppContext
 from bombastic.core.binaries import Tool, locate
 from bombastic.core.download_manager import STAGING, DownloadManager, ItemState
 from bombastic.core.i18n import tr
+from bombastic.core.paths import resources_dir
 from bombastic.core.thumbnails import ThumbnailLoader
 from bombastic.core.urls import extract_urls
 from bombastic.core.ytdlp_command import (
@@ -34,13 +36,30 @@ from bombastic.core.ytdlp_command import (
     VIDEO_PRESETS,
     DownloadOptions,
     Preset,
+    build_download_args,
+    cookie_args,
+    is_audio,
 )
-from bombastic.core.ytdlp_runner import Launcher, default_launcher
+from bombastic.core.ytdlp_options import (
+    ExtraArgsError,
+    YtdlpOption,
+    build_advanced_args,
+    find_conflicts,
+    load_catalog,
+    load_help_translations,
+    split_extra_args,
+    visible_options,
+)
+from bombastic.core.ytdlp_runner import Launcher, default_launcher, describe
+from bombastic.ui.advanced_dialog import AdvancedDialog
 from bombastic.ui.download_card import DownloadCard, output_folder
+from bombastic.ui.formats_dialog import FormatsDialog
 from bombastic.ui.pages import Page
 
 #: Rápido para descargas pequeñas, sin saturar si fallan muchas por la red.
 _RETRY_DELAY_MS = 5000
+#: Enlace de ejemplo para la vista previa del comando.
+_PREVIEW_URL = "https://www.youtube.com/watch?v=…"
 
 
 class DownloadsPage(Page):
@@ -57,6 +76,8 @@ class DownloadsPage(Page):
         self.apply_queue_settings()
         self.thumbnails = ThumbnailLoader(ctx.paths.thumbnails_dir, self)
         self.cards: dict[int, DownloadCard] = {}
+        #: Formato elegido a mano para cada enlace (``-f``).
+        self.format_specs: dict[int, str] = {}
         #: Clave del aviso que se muestra bajo el campo de enlaces (vacía si no hay ninguno).
         self._feedback_key = ""
 
@@ -93,6 +114,9 @@ class DownloadsPage(Page):
         self.folder_edit.setReadOnly(True)
         self.browse_button = QPushButton()
         self.open_folder_button = QPushButton()
+        self.advanced_button = QPushButton()
+        self.advanced_status = QLabel()
+        self.advanced_status.setProperty("muted", True)
         self.preset_label.setBuddy(self.preset_combo)
         self.quality_label.setBuddy(self.quality_combo)
 
@@ -114,6 +138,11 @@ class DownloadsPage(Page):
         grid.addLayout(format_row, 0, 1)
         grid.addWidget(self.folder_label, 1, 0)
         grid.addLayout(folder_row, 1, 1)
+        advanced_row = QHBoxLayout()
+        advanced_row.setSpacing(10)
+        advanced_row.addWidget(self.advanced_button)
+        advanced_row.addWidget(self.advanced_status, 1)
+        grid.addLayout(advanced_row, 2, 1)
         grid.setColumnStretch(1, 1)
 
         self.warning_label = QLabel()
@@ -166,6 +195,7 @@ class DownloadsPage(Page):
         self.extras_check.toggled.connect(self._on_options_changed)
         self.browse_button.clicked.connect(self._browse_folder)
         self.open_folder_button.clicked.connect(lambda: self._open_folder(Path(ctx.download_dir())))
+        self.advanced_button.clicked.connect(self.open_advanced)
         self.download_all_button.clicked.connect(self.download_all)
         self.clear_button.clicked.connect(self.clear_finished)
         self.manager.item_added.connect(self._on_item_added)
@@ -208,6 +238,8 @@ class DownloadsPage(Page):
         self._show_folder()
         self.browse_button.setText(tr("settings.browse"))
         self.open_folder_button.setText(tr("downloads.open_folder"))
+        self.advanced_button.setText(tr("downloads.advanced"))
+        self._show_advanced_status()
 
         self.download_all_button.setText(tr("downloads.download_all"))
         self.clear_button.setText(tr("downloads.clear_finished"))
@@ -263,6 +295,7 @@ class DownloadsPage(Page):
         """Opciones elegidas ahora mismo; se aplican a las descargas que se pidan a continuación."""
         ffmpeg = locate(Tool.FFMPEG, self._ctx.paths)
         quality = self.quality_combo.currentData()
+        extra_args, _valid = self.extra_args()
         return DownloadOptions(
             output_dir=Path(self._ctx.download_dir()),
             preset=self.current_preset(),
@@ -270,7 +303,84 @@ class DownloadsPage(Page):
             embed_subs=self.subs_check.isChecked(),
             embed_extras=self.extras_check.isChecked(),
             ffmpeg_dir=ffmpeg.path.parent if ffmpeg.path is not None else None,
+            extra_args=tuple(extra_args),
         )
+
+    # ------------------------------------------------------------ modo avanzado
+
+    def catalog(self) -> list[YtdlpOption]:
+        """Opciones de yt-dlp (se relee cada vez: puede haberse regenerado)."""
+        _version, options = load_catalog(self._ctx.paths.data_dir, resources_dir())
+        return visible_options(options)
+
+    def extra_args(self) -> tuple[list[str], bool]:
+        """Cookies + modo avanzado + argumentos libres. ``False`` si los libres no son válidos."""
+        settings = self._ctx.settings
+        args = cookie_args(
+            settings.cookies_mode,
+            settings.cookies_browser,
+            settings.cookies_profile,
+            settings.cookies_file,
+        )
+        if settings.advanced_options:
+            args += build_advanced_args(self.catalog(), settings.advanced_options)
+        try:
+            args += split_extra_args(settings.extra_args)
+        except ExtraArgsError:
+            return args, False
+        return args, True
+
+    def command_preview(self) -> tuple[str, list[str]]:
+        """Comando final de ejemplo y conflictos detectados, para el diálogo avanzado."""
+        options = self.current_options()
+        command = describe(("yt-dlp", build_download_args(_PREVIEW_URL, options)))
+        conflicts = find_conflicts(
+            list(options.extra_args),
+            is_audio(options.preset),
+            locate(Tool.FFMPEG, self._ctx.paths).found,
+        )
+        return command, conflicts
+
+    def open_advanced(self) -> AdvancedDialog:
+        dialog = AdvancedDialog(
+            self._ctx,
+            self.catalog(),
+            self.command_preview,
+            load_help_translations(resources_dir()),
+            parent=self,
+        )
+        dialog.finished.connect(lambda _result: self._show_advanced_status())
+        dialog.open()
+        return dialog
+
+    def _show_advanced_status(self) -> None:
+        settings = self._ctx.settings
+        count = len(settings.advanced_options) + bool(settings.extra_args)
+        parts: list[str] = []
+        if count:
+            parts.append(tr("downloads.advanced.active", count=count))
+        if settings.cookies_mode != "off":
+            parts.append(tr("downloads.advanced.cookies"))
+        self.advanced_status.setText(" · ".join(parts))
+
+    def choose_format(self, item_id: int) -> FormatsDialog | None:
+        item = self.manager.item(item_id)
+        if item is None or item.info is None or not item.info.formats:
+            return None
+        dialog = FormatsDialog(item.info.formats, parent=self)
+
+        def accepted() -> None:
+            self.format_specs[item_id] = dialog.spec()
+            self._set_feedback("")
+            self.feedback_label.setText(tr("downloads.format_chosen", spec=dialog.spec()))
+            self.feedback_label.setVisible(True)
+
+        dialog.accepted.connect(accepted)
+        dialog.open()
+        return dialog
+
+    def _options_for(self, item_id: int, options: DownloadOptions) -> DownloadOptions:
+        return replace(options, format_spec=self.format_specs.pop(item_id, ""))
 
     def _sync_option_controls(self) -> None:
         preset = self.current_preset()
@@ -337,7 +447,7 @@ class DownloadsPage(Page):
         options = self.current_options()
         for item in self.manager.items():
             if item.state is ItemState.READY:
-                self.manager.start(item.item_id, options)
+                self.manager.start(item.item_id, self._options_for(item.item_id, options))
 
     def clear_finished(self) -> None:
         """Quita los enlaces cuya información no se ha podido obtener."""
@@ -370,6 +480,7 @@ class DownloadsPage(Page):
         card.cancel_requested.connect(self.manager.cancel)
         card.remove_requested.connect(self.manager.remove)
         card.open_folder_requested.connect(self._open_item_folder)
+        card.formats_requested.connect(self.choose_format)
         self.cards[item_id] = card
         # Antes del hueco elástico del final.
         self._cards_layout.insertWidget(self._cards_layout.count() - 1, card)
@@ -404,7 +515,7 @@ class DownloadsPage(Page):
                 card.set_thumbnail(path)
 
     def _start(self, item_id: int) -> None:
-        self.manager.start(item_id, self.current_options())
+        self.manager.start(item_id, self._options_for(item_id, self.current_options()))
 
     def _open_item_folder(self, item_id: int) -> None:
         item = self.manager.item(item_id)

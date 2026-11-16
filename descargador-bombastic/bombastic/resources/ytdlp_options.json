@@ -1,0 +1,2075 @@
+{
+ "version": "2026.08.19",
+ "options": [
+  {
+   "group": "General Options",
+   "flags": [
+    "--help",
+    "-h"
+   ],
+   "metavar": "",
+   "help": "Print this help text and exit"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--version"
+   ],
+   "metavar": "",
+   "help": "Print program version and exit"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--update",
+    "-U"
+   ],
+   "metavar": "",
+   "help": "Update this program to the latest stable version"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-update"
+   ],
+   "metavar": "",
+   "help": "Do not check for updates (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--update-to"
+   ],
+   "metavar": "[CHANNEL]@[TAG]",
+   "help": "Upgrade/downgrade to a specific version. CHANNEL can be a repository as well. CHANNEL and TAG default to \"stable\" and \"latest\" respectively if omitted; See \"UPDATE\" for details. Supported channels: stable, nightly, master"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--ignore-errors",
+    "-i"
+   ],
+   "metavar": "",
+   "help": "Ignore download and postprocessing errors. The download will be considered successful even if the postprocessing fails"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-abort-on-error"
+   ],
+   "metavar": "",
+   "help": "Continue with next video on download errors; e.g. to skip unavailable videos in a playlist (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--abort-on-error"
+   ],
+   "metavar": "",
+   "help": "Abort downloading of further videos if an error occurs (Alias: --no-ignore-errors)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--list-extractors"
+   ],
+   "metavar": "",
+   "help": "List all supported extractors and exit"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--extractor-descriptions"
+   ],
+   "metavar": "",
+   "help": "Output descriptions of all supported extractors and exit"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--use-extractors"
+   ],
+   "metavar": "NAMES",
+   "help": "Extractor names to use separated by commas. You can also use regexes, \"all\", \"default\" and \"end\" (end URL matching); e.g. --ies \"holodex.*,end,youtube\". Prefix the name with a \"-\" to exclude it, e.g. --ies default,-generic. Use --list-extractors for a list of extractor names. (Alias: --ies)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--default-search"
+   ],
+   "metavar": "PREFIX",
+   "help": "Use this prefix for unqualified URLs. E.g. \"gvsearch2:python\" downloads two videos from google videos for the search term \"python\". Use the value \"auto\" to let yt-dlp guess (\"auto_warning\" to emit a warning when guessing). \"error\" just throws an error. The default value \"fixup_error\" repairs broken URLs, but emits an error if this is not possible instead of searching"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--ignore-config"
+   ],
+   "metavar": "",
+   "help": "Don't load any more configuration files except those given to --config-locations. For backward compatibility, if this option is found inside the system configuration file, the user configuration is not loaded. (Alias: --no-config)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-config-locations"
+   ],
+   "metavar": "",
+   "help": "Do not load any custom configuration files (default). When given inside a configuration file, ignore all previous --config-locations defined in the current file"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--config-locations"
+   ],
+   "metavar": "PATH",
+   "help": "Location of the main configuration file; either the path to the config or its containing directory (\"-\" for stdin). Can be used multiple times and inside other configuration files"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--plugin-dirs"
+   ],
+   "metavar": "DIR",
+   "help": "Path to an additional directory to search for plugins. This option can be used multiple times to add multiple directories. Use \"default\" to search the default plugin directories (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-plugin-dirs"
+   ],
+   "metavar": "",
+   "help": "Clear plugin directories to search, including defaults and those provided by previous --plugin-dirs"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--js-runtimes"
+   ],
+   "metavar": "RUNTIME[:PATH]",
+   "help": "Additional JavaScript runtime to enable, with an optional location for the runtime (either the path to the binary or its containing directory). This option can be used multiple times to enable multiple runtimes. Supported runtimes are (in order of priority, from highest to lowest): deno, node, quickjs, bun. Only \"deno\" is enabled by default. The highest priority runtime that is both enabled and available will be used. In order to use a lower priority runtime when \"deno\" is available, --no-js- runtimes needs to be passed before enabling other runtimes"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-js-runtimes"
+   ],
+   "metavar": "",
+   "help": "Clear JavaScript runtimes to enable, including defaults and those provided by previous --js-runtimes"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--remote-components"
+   ],
+   "metavar": "COMPONENT",
+   "help": "Remote components to allow yt-dlp to fetch when required. This option is currently not needed if you are using an official executable or have the requisite version of the yt-dlp-ejs package installed. You can use this option multiple times to allow multiple components. Supported values: ejs:npm (external JavaScript components from npm), ejs:github (external JavaScript components from yt-dlp-ejs GitHub). By default, no remote components are allowed"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-remote-components"
+   ],
+   "metavar": "",
+   "help": "Disallow fetching of all remote components, including any previously allowed by --remote-components or defaults."
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--flat-playlist"
+   ],
+   "metavar": "",
+   "help": "Do not extract a playlist's URL result entries; some entry metadata may be missing and downloading may be bypassed"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-flat-playlist"
+   ],
+   "metavar": "",
+   "help": "Fully extract the videos of a playlist (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--live-from-start"
+   ],
+   "metavar": "",
+   "help": "Download livestreams from the start. Currently experimental and only supported for YouTube, Twitch, TVer, and mellow-fan"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-live-from-start"
+   ],
+   "metavar": "",
+   "help": "Download livestreams from the current time (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--wait-for-video"
+   ],
+   "metavar": "MIN[-MAX]",
+   "help": "Wait for scheduled streams to become available. Pass the minimum number of seconds (or range) to wait between retries"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-wait-for-video"
+   ],
+   "metavar": "",
+   "help": "Do not wait for scheduled streams (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--mark-watched"
+   ],
+   "metavar": "",
+   "help": "Mark videos watched (even with --simulate)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--no-mark-watched"
+   ],
+   "metavar": "",
+   "help": "Do not mark videos watched (default)"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--color"
+   ],
+   "metavar": "[STREAM:]POLICY",
+   "help": "Whether to emit color codes in output, optionally prefixed by the STREAM (stdout or stderr) to apply the setting to. Can be one of \"always\", \"auto\" (default), \"never\", or \"no_color\" (use non color terminal sequences). Use \"auto-tty\" or \"no_color-tty\" to decide based on terminal support only. Can be used multiple times"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--compat-options"
+   ],
+   "metavar": "OPTS",
+   "help": "Options that can help keep compatibility with youtube-dl or youtube-dlc configurations by reverting some of the changes made in yt-dlp. See \"Differences in default behavior\" for details"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--alias"
+   ],
+   "metavar": "ALIASES OPTIONS",
+   "help": "Create aliases for an option string. Unless an alias starts with a dash \"-\", it is prefixed with \"--\". Arguments are parsed according to the Python string formatting mini-language. E.g. --alias get-audio,-X \"-S aext:{0},abr -x --audio-format {0}\" creates options \"--get-audio\" and \"-X\" that takes an argument (ARG0) and expands to \"-S aext:ARG0,abr -x --audio-format ARG0\". All defined aliases are listed in the --help output. Alias options can trigger more aliases; so be careful to avoid defining recursive options. As a safety measure, each alias may be triggered a maximum of 100 times. This option can be used multiple times"
+  },
+  {
+   "group": "General Options",
+   "flags": [
+    "--preset-alias",
+    "-t"
+   ],
+   "metavar": "PRESET",
+   "help": "Applies a predefined set of options. e.g. --preset-alias mp3. The following presets are available: mp3, aac, mp4, mkv, sleep. See the \"Preset Aliases\" section at the end for more info. This option can be used multiple times"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--proxy"
+   ],
+   "metavar": "URL",
+   "help": "Use the specified HTTP/HTTPS/SOCKS proxy. To enable SOCKS proxy, specify a proper scheme, e.g. socks5://user:pass@127.0.0.1:1080/. Pass in an empty string (--proxy \"\") for direct connection"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--socket-timeout"
+   ],
+   "metavar": "SECONDS",
+   "help": "Time to wait before giving up, in seconds"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--source-address"
+   ],
+   "metavar": "IP",
+   "help": "Client-side IP address to bind to"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--impersonate"
+   ],
+   "metavar": "CLIENT[:OS]",
+   "help": "Client to impersonate for requests. E.g. chrome, chrome-110, chrome:windows-10. Pass --impersonate=\"\" to impersonate any client. Note that forcing impersonation for all requests may have a detrimental impact on download speed and stability"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--list-impersonate-targets"
+   ],
+   "metavar": "",
+   "help": "List available clients to impersonate."
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--force-ipv4",
+    "-4"
+   ],
+   "metavar": "",
+   "help": "Make all connections via IPv4"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--force-ipv6",
+    "-6"
+   ],
+   "metavar": "",
+   "help": "Make all connections via IPv6"
+  },
+  {
+   "group": "Network Options",
+   "flags": [
+    "--enable-file-urls"
+   ],
+   "metavar": "",
+   "help": "Enable file:// URLs. This is disabled by default for security reasons."
+  },
+  {
+   "group": "Geo-restriction",
+   "flags": [
+    "--geo-verification-proxy"
+   ],
+   "metavar": "URL",
+   "help": "Use this proxy to verify the IP address for some geo-restricted sites. The default proxy specified by --proxy (or none, if the option is not present) is used for the actual downloading"
+  },
+  {
+   "group": "Geo-restriction",
+   "flags": [
+    "--xff"
+   ],
+   "metavar": "VALUE",
+   "help": "How to fake X-Forwarded-For HTTP header to try bypassing geographic restriction. One of \"default\" (only when known to be useful), \"never\", an IP block in CIDR notation, or a two-letter ISO 3166-2 country code"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--playlist-items",
+    "-I"
+   ],
+   "metavar": "ITEM_SPEC",
+   "help": "Comma-separated playlist_index of the items to download. You can specify a range using \"[START]:[STOP][:STEP]\". For backward compatibility, START-STOP is also supported. Use negative indices to count from the right and negative STEP to download in reverse order. E.g. \"-I 1:3,7,-5::2\" used on a playlist of size 15 will download the items at index 1,2,3,7,11,13,15"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--min-filesize"
+   ],
+   "metavar": "SIZE",
+   "help": "Abort download if filesize is smaller than SIZE, e.g. 50k or 44.6M"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--max-filesize"
+   ],
+   "metavar": "SIZE",
+   "help": "Abort download if filesize is larger than SIZE, e.g. 50k or 44.6M"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--date"
+   ],
+   "metavar": "DATE",
+   "help": "Download only videos uploaded on this date. The date can be \"YYYYMMDD\" or in the format [now|today|yesterday][- N[day|week|month|year]]. E.g. \"--date today-2weeks\" downloads only videos uploaded on the same day two weeks ago"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--datebefore"
+   ],
+   "metavar": "DATE",
+   "help": "Download only videos uploaded on or before this date. The date formats accepted are the same as --date"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--dateafter"
+   ],
+   "metavar": "DATE",
+   "help": "Download only videos uploaded on or after this date. The date formats accepted are the same as --date"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--match-filters"
+   ],
+   "metavar": "FILTER",
+   "help": "Generic video filter. Any \"OUTPUT TEMPLATE\" field can be compared with a number or a string using the operators defined in \"Filtering Formats\". You can also simply specify a field to match if the field is present, use \"!field\" to check if the field is not present, and \"&\" to check multiple conditions. Use a \"\\\" to escape \"&\" or quotes if needed. If used multiple times, the filter matches if at least one of the conditions is met. E.g. --match-filters !is_live --match-filters \"like_count>?100 & description~='(?i)\\bcats \\& dogs\\b'\" matches only videos that are not live OR those that have a like count more than 100 (or the like field is not available) and also has a description that contains the phrase \"cats & dogs\" (caseless). Use \"--match-filters -\" to interactively ask whether to download each video"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-match-filters"
+   ],
+   "metavar": "",
+   "help": "Do not use any --match-filters (default)"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--break-match-filters"
+   ],
+   "metavar": "FILTER",
+   "help": "Same as \"--match-filters\" but stops the download process when a video is rejected"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-break-match-filters"
+   ],
+   "metavar": "",
+   "help": "Do not use any --break-match-filters (default)"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-playlist"
+   ],
+   "metavar": "",
+   "help": "Download only the video, if the URL refers to a video and a playlist"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--yes-playlist"
+   ],
+   "metavar": "",
+   "help": "Download the playlist, if the URL refers to a video and a playlist"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--age-limit"
+   ],
+   "metavar": "YEARS",
+   "help": "Download only videos suitable for the given age"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--download-archive"
+   ],
+   "metavar": "FILE",
+   "help": "Download only videos not listed in the archive file. Record the IDs of all downloaded videos in it"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-download-archive"
+   ],
+   "metavar": "",
+   "help": "Do not use archive file (default)"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--max-downloads"
+   ],
+   "metavar": "NUMBER",
+   "help": "Abort after downloading NUMBER files"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--break-on-existing"
+   ],
+   "metavar": "",
+   "help": "Stop the download process when encountering a file that is in the archive supplied with the --download-archive option"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-break-on-existing"
+   ],
+   "metavar": "",
+   "help": "Do not stop the download process when encountering a file that is in the archive (default)"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--break-per-input"
+   ],
+   "metavar": "",
+   "help": "Alters --max-downloads, --break-on-existing, --break-match-filters, and autonumber to reset per input URL"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--no-break-per-input"
+   ],
+   "metavar": "",
+   "help": "--break-on-existing and similar options terminates the entire download queue"
+  },
+  {
+   "group": "Video Selection",
+   "flags": [
+    "--skip-playlist-after-errors"
+   ],
+   "metavar": "N",
+   "help": "Number of allowed failures until the rest of the playlist is skipped"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--concurrent-fragments",
+    "-N"
+   ],
+   "metavar": "N",
+   "help": "Number of fragments of a dash/hlsnative video that should be downloaded concurrently (default is 1)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--limit-rate",
+    "-r"
+   ],
+   "metavar": "RATE",
+   "help": "Maximum download rate in bytes per second, e.g. 50K or 4.2M"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--throttled-rate"
+   ],
+   "metavar": "RATE",
+   "help": "Minimum download rate in bytes per second below which throttling is assumed and the video data is re-extracted, e.g. 100K"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--retries",
+    "-R"
+   ],
+   "metavar": "RETRIES",
+   "help": "Number of retries (default is 10), or \"infinite\""
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--file-access-retries"
+   ],
+   "metavar": "RETRIES",
+   "help": "Number of times to retry on file access error (default is 3), or \"infinite\""
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--fragment-retries"
+   ],
+   "metavar": "RETRIES",
+   "help": "Number of retries for a fragment (default is 10), or \"infinite\" (DASH, hlsnative and ISM)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--retry-sleep"
+   ],
+   "metavar": "[TYPE:]EXPR",
+   "help": "Time to sleep between retries in seconds (optionally) prefixed by the type of retry (http (default), fragment, file_access, extractor) to apply the sleep to. EXPR can be a number, linear=START[:END[:STEP=1]] or exp=START[:END[:BASE=2]]. This option can be used multiple times to set the sleep for the different retry types, e.g. --retry-sleep linear=1::2 --retry-sleep fragment:exp=1:20"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--skip-unavailable-fragments"
+   ],
+   "metavar": "",
+   "help": "Skip unavailable fragments for DASH, hlsnative and ISM downloads (default) (Alias: --no-abort-on-unavailable-fragments)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--abort-on-unavailable-fragments"
+   ],
+   "metavar": "",
+   "help": "Abort download if a fragment is unavailable (Alias: --no-skip-unavailable-fragments)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--keep-fragments"
+   ],
+   "metavar": "",
+   "help": "Keep downloaded fragments on disk after downloading is finished"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--no-keep-fragments"
+   ],
+   "metavar": "",
+   "help": "Delete downloaded fragments after downloading is finished (default)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--buffer-size"
+   ],
+   "metavar": "SIZE",
+   "help": "Size of download buffer, e.g. 1024 or 16K (default is 1024)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--resize-buffer"
+   ],
+   "metavar": "",
+   "help": "The buffer size is automatically resized from an initial value of --buffer-size (default)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--no-resize-buffer"
+   ],
+   "metavar": "",
+   "help": "Do not automatically adjust the buffer size"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--http-chunk-size"
+   ],
+   "metavar": "SIZE",
+   "help": "Size of a chunk for chunk-based HTTP downloading, e.g. 10485760 or 10M (default is disabled). May be useful for bypassing bandwidth throttling imposed by a webserver (experimental)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--playlist-random"
+   ],
+   "metavar": "",
+   "help": "Download playlist videos in random order"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--lazy-playlist"
+   ],
+   "metavar": "",
+   "help": "Process entries in the playlist as they are received. This disables n_entries, --playlist-random and --playlist-reverse"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--no-lazy-playlist"
+   ],
+   "metavar": "",
+   "help": "Process videos in the playlist only after the entire playlist is parsed (default)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--hls-use-mpegts"
+   ],
+   "metavar": "",
+   "help": "Use the mpegts container for HLS videos; allowing some players to play the video while downloading, and reducing the chance of file corruption if download is interrupted. This is enabled by default for live streams"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--no-hls-use-mpegts"
+   ],
+   "metavar": "",
+   "help": "Do not use the mpegts container for HLS videos. This is default when not downloading live streams"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--download-sections"
+   ],
+   "metavar": "REGEX",
+   "help": "Download only chapters that match the regular expression. A \"*\" prefix denotes time-range instead of chapter. Negative timestamps are calculated from the end. \"*from-url\" can be used to download between the \"start_time\" and \"end_time\" extracted from the URL. Needs ffmpeg. This option can be used multiple times to download multiple sections, e.g. --download-sections \"*10:15-inf\" --download-sections \"intro\""
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--downloader"
+   ],
+   "metavar": "[PROTO:]NAME",
+   "help": "Name or path of the external downloader to use (optionally) prefixed by the protocols (http, ftp, m3u8, dash, rtmp) to use it for. Currently supports native, aria2c, axel, curl, ffmpeg, httpie, wget. You can use this option multiple times to set different downloaders for different protocols. E.g. --downloader aria2c --downloader \"dash,m3u8:native\" will use aria2c for http/ftp downloads, and the native downloader for dash/m3u8 downloads (Alias: --external-downloader)"
+  },
+  {
+   "group": "Download Options",
+   "flags": [
+    "--downloader-args"
+   ],
+   "metavar": "NAME:ARGS",
+   "help": "Give these arguments to the external downloader. Specify the downloader name and the arguments separated by a colon \":\". For ffmpeg, arguments can be passed to different positions using the same syntax as --postprocessor-args. You can use this option multiple times to give different arguments to different downloaders (Alias: --external-downloader-args)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--batch-file",
+    "-a"
+   ],
+   "metavar": "FILE",
+   "help": "File containing URLs to download (\"-\" for stdin), one URL per line. Lines starting with \"#\", \";\" or \"]\" are considered as comments and ignored"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-batch-file"
+   ],
+   "metavar": "",
+   "help": "Do not read URLs from batch file (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--paths",
+    "-P"
+   ],
+   "metavar": "[TYPES:]PATH",
+   "help": "The paths where the files should be downloaded. Specify the type of file and the path separated by a colon \":\". All the same TYPES as --output are supported. Additionally, you can also provide \"home\" (default) and \"temp\" paths. All intermediary files are first downloaded to the temp path and then the final files are moved over to the home path after download is finished. This option is ignored if --output is an absolute path"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--output",
+    "-o"
+   ],
+   "metavar": "[TYPES:]TEMPLATE",
+   "help": "Output filename template; see \"OUTPUT TEMPLATE\" for details"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--output-na-placeholder"
+   ],
+   "metavar": "TEXT",
+   "help": "Placeholder for unavailable fields in --output (default: \"NA\")"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--restrict-filenames"
+   ],
+   "metavar": "",
+   "help": "Restrict filenames to only ASCII characters, and avoid \"&\" and spaces in filenames"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-restrict-filenames"
+   ],
+   "metavar": "",
+   "help": "Allow Unicode characters, \"&\" and spaces in filenames (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--windows-filenames"
+   ],
+   "metavar": "",
+   "help": "Force filenames to be Windows-compatible"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-windows-filenames"
+   ],
+   "metavar": "",
+   "help": "Sanitize filenames only minimally"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--trim-filenames"
+   ],
+   "metavar": "LENGTH",
+   "help": "Limit the filename length (excluding extension) to the specified number of characters"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-overwrites",
+    "-w"
+   ],
+   "metavar": "",
+   "help": "Do not overwrite any files"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--force-overwrites"
+   ],
+   "metavar": "",
+   "help": "Overwrite all video and metadata files. This option includes --no-continue"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-force-overwrites"
+   ],
+   "metavar": "",
+   "help": "Do not overwrite the video, but overwrite related files (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--continue",
+    "-c"
+   ],
+   "metavar": "",
+   "help": "Resume partially downloaded files/fragments (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-continue"
+   ],
+   "metavar": "",
+   "help": "Do not resume partially downloaded fragments. If the file is not fragmented, restart download of the entire file"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--part"
+   ],
+   "metavar": "",
+   "help": "Use .part files instead of writing directly into output file (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-part"
+   ],
+   "metavar": "",
+   "help": "Do not use .part files - write directly into output file"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--mtime"
+   ],
+   "metavar": "",
+   "help": "Use the Last-modified header to set the file modification time"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-mtime"
+   ],
+   "metavar": "",
+   "help": "Do not use the Last-modified header to set the file modification time (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--write-description"
+   ],
+   "metavar": "",
+   "help": "Write video description to a .description file"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-write-description"
+   ],
+   "metavar": "",
+   "help": "Do not write video description (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--write-info-json"
+   ],
+   "metavar": "",
+   "help": "Write video metadata to a .info.json file (this may contain personal information)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-write-info-json"
+   ],
+   "metavar": "",
+   "help": "Do not write video metadata (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--write-playlist-metafiles"
+   ],
+   "metavar": "",
+   "help": "Write playlist metadata in addition to the video metadata when using --write-info-json, --write-description etc. (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-write-playlist-metafiles"
+   ],
+   "metavar": "",
+   "help": "Do not write playlist metadata when using --write-info-json, --write-description etc."
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--clean-info-json"
+   ],
+   "metavar": "",
+   "help": "Remove some internal metadata such as filenames from the infojson (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-clean-info-json"
+   ],
+   "metavar": "",
+   "help": "Write all fields to the infojson"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--write-comments"
+   ],
+   "metavar": "",
+   "help": "Retrieve video comments to be placed in the infojson. The comments are fetched even without this option if the extraction is known to be quick (Alias: --get-comments)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-write-comments"
+   ],
+   "metavar": "",
+   "help": "Do not retrieve video comments unless the extraction is known to be quick (Alias: --no-get-comments)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--load-info-json"
+   ],
+   "metavar": "FILE",
+   "help": "JSON file containing the video information (created with the \"--write-info-json\" option)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--cookies"
+   ],
+   "metavar": "FILE",
+   "help": "Netscape formatted file to read cookies from and dump cookie jar in"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-cookies"
+   ],
+   "metavar": "",
+   "help": "Do not read/dump cookies from/to file (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--cookies-from-browser"
+   ],
+   "metavar": "BROWSER[+KEYRING][:PROFILE][::CONTAINER]",
+   "help": "The name of the browser to load cookies from. Currently supported browsers are: brave, chrome, chromium, edge, firefox, opera, safari, vivaldi, whale. Optionally, the KEYRING used for decrypting Chromium cookies on Linux, the name/path of the PROFILE to load cookies from, and the CONTAINER name (if Firefox) (\"none\" for no container) can be given with their respective separators. By default, all containers of the most recently accessed profile are used. Currently supported keyrings are: basictext, gnomekeyring, kwallet, kwallet5, kwallet6"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-cookies-from-browser"
+   ],
+   "metavar": "",
+   "help": "Do not load cookies from browser (default)"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--cache-dir"
+   ],
+   "metavar": "DIR",
+   "help": "Location in the filesystem where yt-dlp can store some downloaded information (such as client ids and signatures) permanently. By default ${XDG_CACHE_HOME}/yt-dlp"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--no-cache-dir"
+   ],
+   "metavar": "",
+   "help": "Disable filesystem caching"
+  },
+  {
+   "group": "Filesystem Options",
+   "flags": [
+    "--rm-cache-dir"
+   ],
+   "metavar": "",
+   "help": "Delete all filesystem cache files"
+  },
+  {
+   "group": "Thumbnail Options",
+   "flags": [
+    "--write-thumbnail"
+   ],
+   "metavar": "",
+   "help": "Write thumbnail image to disk"
+  },
+  {
+   "group": "Thumbnail Options",
+   "flags": [
+    "--no-write-thumbnail"
+   ],
+   "metavar": "",
+   "help": "Do not write thumbnail image to disk (default)"
+  },
+  {
+   "group": "Thumbnail Options",
+   "flags": [
+    "--write-all-thumbnails"
+   ],
+   "metavar": "",
+   "help": "Write all thumbnail image formats to disk"
+  },
+  {
+   "group": "Thumbnail Options",
+   "flags": [
+    "--list-thumbnails"
+   ],
+   "metavar": "",
+   "help": "List available thumbnails of each video. Simulate unless --no-simulate is used"
+  },
+  {
+   "group": "Internet Shortcut Options",
+   "flags": [
+    "--write-link"
+   ],
+   "metavar": "",
+   "help": "Write an internet shortcut file, depending on the current platform (.url, .webloc or .desktop). The URL may be cached by the OS"
+  },
+  {
+   "group": "Internet Shortcut Options",
+   "flags": [
+    "--write-url-link"
+   ],
+   "metavar": "",
+   "help": "Write a .url Windows internet shortcut. The OS caches the URL based on the file path"
+  },
+  {
+   "group": "Internet Shortcut Options",
+   "flags": [
+    "--write-webloc-link"
+   ],
+   "metavar": "",
+   "help": "Write a .webloc macOS internet shortcut"
+  },
+  {
+   "group": "Internet Shortcut Options",
+   "flags": [
+    "--write-desktop-link"
+   ],
+   "metavar": "",
+   "help": "Write a .desktop Linux internet shortcut"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--quiet",
+    "-q"
+   ],
+   "metavar": "",
+   "help": "Activate quiet mode. If used with --verbose, print the log to stderr"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--no-quiet"
+   ],
+   "metavar": "",
+   "help": "Deactivate quiet mode. (Default)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--no-warnings"
+   ],
+   "metavar": "",
+   "help": "Ignore warnings"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--simulate",
+    "-s"
+   ],
+   "metavar": "",
+   "help": "Do not download the video and do not write anything to disk"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--no-simulate"
+   ],
+   "metavar": "",
+   "help": "Download the video even if printing/listing options are used"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--ignore-no-formats-error"
+   ],
+   "metavar": "",
+   "help": "Ignore \"No video formats\" error. Useful for extracting metadata even if the videos are not actually available for download (experimental)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--no-ignore-no-formats-error"
+   ],
+   "metavar": "",
+   "help": "Throw error when no downloadable video formats are found (default)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--skip-download"
+   ],
+   "metavar": "",
+   "help": "Do not download the video but write all related files (Alias: --no-download)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--print",
+    "-O"
+   ],
+   "metavar": "[WHEN:]TEMPLATE",
+   "help": "Field name or output template to print to screen, optionally prefixed with when to print it, separated by a \":\". Supported values of \"WHEN\" are the same as that of --use-postprocessor (default: video). Implies --quiet. Implies --simulate unless --no-simulate or later stages of WHEN are used. This option can be used multiple times"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--print-to-file"
+   ],
+   "metavar": "[WHEN:]TEMPLATE FILE",
+   "help": "Append given template to the file. The values of WHEN and TEMPLATE are the same as that of --print. FILE uses the same syntax as the output template. This option can be used multiple times"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--dump-json",
+    "-j"
+   ],
+   "metavar": "",
+   "help": "Quiet, but print JSON information for each video. Simulate unless --no-simulate is used. See \"OUTPUT TEMPLATE\" for a description of available keys"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--dump-single-json",
+    "-J"
+   ],
+   "metavar": "",
+   "help": "Quiet, but print JSON information for each URL or infojson passed. Simulate unless --no-simulate is used. If the URL refers to a playlist, the whole playlist information is dumped in a single line"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--force-write-archive"
+   ],
+   "metavar": "",
+   "help": "Force download archive entries to be written as far as no errors occur, even if -s or another simulation option is used (Alias: --force-download-archive)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--newline"
+   ],
+   "metavar": "",
+   "help": "Output progress bar as new lines"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--no-progress"
+   ],
+   "metavar": "",
+   "help": "Do not print progress bar"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--progress"
+   ],
+   "metavar": "",
+   "help": "Show progress bar, even if in quiet mode"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--console-title"
+   ],
+   "metavar": "",
+   "help": "Display progress in console titlebar"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--progress-template"
+   ],
+   "metavar": "[TYPES:]TEMPLATE",
+   "help": "Template for progress outputs, optionally prefixed with one of \"download:\" (default), \"download-title:\" (the console title), \"postprocess:\",  or \"postprocess-title:\". The video's fields are accessible under the \"info\" key and the progress attributes are accessible under \"progress\" key. E.g. --console-title --progress-template \"download- title:%(info.id)s-%(progress.eta)s\""
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--progress-delta"
+   ],
+   "metavar": "SECONDS",
+   "help": "Time between progress output (default: 0)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--verbose",
+    "-v"
+   ],
+   "metavar": "",
+   "help": "Print various debugging information"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--dump-pages"
+   ],
+   "metavar": "",
+   "help": "Print downloaded pages encoded using base64 to debug problems (very verbose)"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--write-pages"
+   ],
+   "metavar": "",
+   "help": "Write downloaded intermediary pages to files in the current directory to debug problems"
+  },
+  {
+   "group": "Verbosity and Simulation Options",
+   "flags": [
+    "--print-traffic"
+   ],
+   "metavar": "",
+   "help": "Display sent and read HTTP traffic"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--encoding"
+   ],
+   "metavar": "ENCODING",
+   "help": "Force the specified encoding (experimental)"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--legacy-server-connect"
+   ],
+   "metavar": "",
+   "help": "Explicitly allow HTTPS connection to servers that do not support RFC 5746 secure renegotiation"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--no-check-certificates"
+   ],
+   "metavar": "",
+   "help": "Suppress HTTPS certificate validation"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--prefer-insecure"
+   ],
+   "metavar": "",
+   "help": "Use an unencrypted connection to retrieve information about the video"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--add-headers"
+   ],
+   "metavar": "FIELD:VALUE",
+   "help": "Specify a custom HTTP header and its value, separated by a colon \":\". You can use this option multiple times"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--bidi-workaround"
+   ],
+   "metavar": "",
+   "help": "Work around terminals that lack bidirectional text support. Requires bidiv or fribidi executable in PATH"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--sleep-requests"
+   ],
+   "metavar": "SECONDS",
+   "help": "Number of seconds to sleep between requests during data extraction"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--sleep-interval"
+   ],
+   "metavar": "SECONDS",
+   "help": "Number of seconds to sleep before each download. This is the minimum time to sleep when used along with --max-sleep-interval (Alias: --min-sleep-interval)"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--max-sleep-interval"
+   ],
+   "metavar": "SECONDS",
+   "help": "Maximum number of seconds to sleep. Can only be used along with --min-sleep-interval"
+  },
+  {
+   "group": "Workarounds",
+   "flags": [
+    "--sleep-subtitles"
+   ],
+   "metavar": "SECONDS",
+   "help": "Number of seconds to sleep before each subtitle download"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--format",
+    "-f"
+   ],
+   "metavar": "FORMAT",
+   "help": "Video format code, see \"FORMAT SELECTION\" for more details"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--format-sort",
+    "-S"
+   ],
+   "metavar": "SORTORDER",
+   "help": "Sort the formats by the fields given, see \"Sorting Formats\" for more details"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--format-sort-reset"
+   ],
+   "metavar": "",
+   "help": "Disregard previous user specified sort order and reset to the default"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--format-sort-force"
+   ],
+   "metavar": "",
+   "help": "Force user specified sort order to have precedence over all fields, see \"Sorting Formats\" for more details (Alias: --S-force)"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--no-format-sort-force"
+   ],
+   "metavar": "",
+   "help": "Some fields have precedence over the user specified sort order (default)"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--video-multistreams"
+   ],
+   "metavar": "",
+   "help": "Allow multiple video streams to be merged into a single file"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--no-video-multistreams"
+   ],
+   "metavar": "",
+   "help": "Only one video stream is downloaded for each output file (default)"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--audio-multistreams"
+   ],
+   "metavar": "",
+   "help": "Allow multiple audio streams to be merged into a single file"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--no-audio-multistreams"
+   ],
+   "metavar": "",
+   "help": "Only one audio stream is downloaded for each output file (default)"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--prefer-free-formats"
+   ],
+   "metavar": "",
+   "help": "Prefer video formats with free containers over non-free ones of the same quality. Use with \"-S ext\" to strictly prefer free containers irrespective of quality"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--no-prefer-free-formats"
+   ],
+   "metavar": "",
+   "help": "Don't give any special preference to free containers (default)"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--check-formats"
+   ],
+   "metavar": "",
+   "help": "Make sure formats are selected only from those that are actually downloadable"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--check-all-formats"
+   ],
+   "metavar": "",
+   "help": "Check all formats for whether they are actually downloadable"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--no-check-formats"
+   ],
+   "metavar": "",
+   "help": "Do not check that the formats are actually downloadable"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--list-formats",
+    "-F"
+   ],
+   "metavar": "",
+   "help": "List available formats of each video. Simulate unless --no-simulate is used"
+  },
+  {
+   "group": "Video Format Options",
+   "flags": [
+    "--merge-output-format"
+   ],
+   "metavar": "FORMAT",
+   "help": "Containers that may be used when merging formats, separated by \"/\", e.g. \"mp4/mkv\". Ignored if no merge is required. (currently supported: avi, flv, mkv, mov, mp4, webm)"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--write-subs"
+   ],
+   "metavar": "",
+   "help": "Write subtitle file"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--no-write-subs"
+   ],
+   "metavar": "",
+   "help": "Do not write subtitle file (default)"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--write-auto-subs"
+   ],
+   "metavar": "",
+   "help": "Write automatically generated subtitle file (Alias: --write-automatic-subs)"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--no-write-auto-subs"
+   ],
+   "metavar": "",
+   "help": "Do not write auto-generated subtitles (default) (Alias: --no-write-automatic-subs)"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--list-subs"
+   ],
+   "metavar": "",
+   "help": "List available subtitles of each video. Simulate unless --no-simulate is used"
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--sub-format"
+   ],
+   "metavar": "FORMAT",
+   "help": "Subtitle format; accepts formats preference separated by \"/\", e.g. \"srt\" or \"ass/srt/best\""
+  },
+  {
+   "group": "Subtitle Options",
+   "flags": [
+    "--sub-langs"
+   ],
+   "metavar": "LANGS",
+   "help": "Languages of the subtitles to download (can be regex) or \"all\" separated by commas, e.g. --sub-langs \"en.*,ja\" (where \"en.*\" is a regex pattern that matches \"en\" followed by 0 or more of any character). You can prefix the language code with a \"-\" to exclude it from the requested languages, e.g. --sub- langs all,-live_chat. Use --list-subs for a list of available language tags"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--username",
+    "-u"
+   ],
+   "metavar": "USERNAME",
+   "help": "Login with this account ID"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--password",
+    "-p"
+   ],
+   "metavar": "PASSWORD",
+   "help": "Account password. If this option is left out, yt-dlp will ask interactively"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--twofactor",
+    "-2"
+   ],
+   "metavar": "TWOFACTOR",
+   "help": "Two-factor authentication code"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--netrc",
+    "-n"
+   ],
+   "metavar": "",
+   "help": "Use .netrc authentication data"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--netrc-location"
+   ],
+   "metavar": "PATH",
+   "help": "Location of .netrc authentication data; either the path or its containing directory. Defaults to ~/.netrc"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--netrc-cmd"
+   ],
+   "metavar": "NETRC_CMD",
+   "help": "Command to execute to get the credentials for an extractor."
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--video-password"
+   ],
+   "metavar": "PASSWORD",
+   "help": "Video-specific password"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--ap-mso"
+   ],
+   "metavar": "MSO",
+   "help": "Adobe Pass multiple-system operator (TV provider) identifier, use --ap-list-mso for a list of available MSOs"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--ap-username"
+   ],
+   "metavar": "USERNAME",
+   "help": "Multiple-system operator account login"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--ap-password"
+   ],
+   "metavar": "PASSWORD",
+   "help": "Multiple-system operator account password. If this option is left out, yt-dlp will ask interactively"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--ap-list-mso"
+   ],
+   "metavar": "",
+   "help": "List all supported multiple-system operators"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--client-certificate"
+   ],
+   "metavar": "CERTFILE",
+   "help": "Path to client certificate file in PEM format. May include the private key"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--client-certificate-key"
+   ],
+   "metavar": "KEYFILE",
+   "help": "Path to private key file for client certificate"
+  },
+  {
+   "group": "Authentication Options",
+   "flags": [
+    "--client-certificate-password"
+   ],
+   "metavar": "PASSWORD",
+   "help": "Password for client certificate private key, if encrypted. If not provided, and the key is encrypted, yt-dlp will ask interactively"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--extract-audio",
+    "-x"
+   ],
+   "metavar": "",
+   "help": "Convert video files to audio-only files (requires ffmpeg and ffprobe)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--audio-format"
+   ],
+   "metavar": "FORMAT",
+   "help": "Format to convert the audio to when -x is used. (currently supported: best (default), aac, alac, flac, m4a, mp3, opus, vorbis, wav). You can specify multiple rules using similar syntax as --remux-video"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--audio-quality"
+   ],
+   "metavar": "QUALITY",
+   "help": "Specify ffmpeg audio quality to use when converting the audio with -x. Insert a value between 0 (best) and 10 (worst) for VBR or a specific bitrate like 128K (default 5)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--remux-video"
+   ],
+   "metavar": "FORMAT",
+   "help": "Remux the video into another container if necessary (currently supported: avi, flv, gif, mkv, mov, mp4, webm, aac, aiff, alac, flac, m4a, mka, mp3, ogg, opus, vorbis, wav). If the target container does not support the video/audio codec, remuxing will fail. You can specify multiple rules; e.g. \"aac>m4a/mov>mp4/mkv\" will remux aac to m4a, mov to mp4 and anything else to mkv"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--recode-video"
+   ],
+   "metavar": "FORMAT",
+   "help": "Re-encode the video into another format if necessary. The syntax and supported formats are the same as --remux-video"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--postprocessor-args"
+   ],
+   "metavar": "NAME:ARGS",
+   "help": "Give these arguments to the postprocessors. Specify the postprocessor/executable name and the arguments separated by a colon \":\" to give the argument to the specified postprocessor/executable. Supported PP are: Merger, ModifyChapters, SplitChapters, ExtractAudio, VideoRemuxer, VideoConvertor, Metadata, EmbedSubtitle, EmbedThumbnail, SubtitlesConvertor, ThumbnailsConvertor, FixupStretched, FixupM4a, FixupM3u8, FixupTimestamp and FixupDuration. The supported executables are: AtomicParsley, FFmpeg and FFprobe. You can also specify \"PP+EXE:ARGS\" to give the arguments to the specified executable only when being used by the specified postprocessor. Additionally, for ffmpeg/ffprobe, \"_i\"/\"_o\" can be appended to the prefix optionally followed by a number to pass the argument before the specified input/output file, e.g. --ppa \"Merger+ffmpeg_i1:-v quiet\". You can use this option multiple times to give different arguments to different postprocessors. (Alias: --ppa)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--keep-video",
+    "-k"
+   ],
+   "metavar": "",
+   "help": "Keep the intermediate video file on disk after post-processing"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-keep-video"
+   ],
+   "metavar": "",
+   "help": "Delete the intermediate video file after post-processing (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--post-overwrites"
+   ],
+   "metavar": "",
+   "help": "Overwrite post-processed files (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-post-overwrites"
+   ],
+   "metavar": "",
+   "help": "Do not overwrite post-processed files"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--embed-subs"
+   ],
+   "metavar": "",
+   "help": "Embed subtitles in the video (only for mp4, webm and mkv videos)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-embed-subs"
+   ],
+   "metavar": "",
+   "help": "Do not embed subtitles (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--embed-thumbnail"
+   ],
+   "metavar": "",
+   "help": "Embed thumbnail in the video as cover art"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-embed-thumbnail"
+   ],
+   "metavar": "",
+   "help": "Do not embed thumbnail (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--embed-metadata"
+   ],
+   "metavar": "",
+   "help": "Embed metadata to the video file. Also embeds chapters/infojson if present unless --no-embed-chapters/--no-embed-info-json are used (Alias: --add-metadata)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-embed-metadata"
+   ],
+   "metavar": "",
+   "help": "Do not add metadata to file (default) (Alias: --no-add-metadata)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--embed-chapters"
+   ],
+   "metavar": "",
+   "help": "Add chapter markers to the video file (Alias: --add-chapters)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-embed-chapters"
+   ],
+   "metavar": "",
+   "help": "Do not add chapter markers (default) (Alias: --no-add-chapters)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--embed-info-json"
+   ],
+   "metavar": "",
+   "help": "Embed the infojson as an attachment to mkv/mka video files"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-embed-info-json"
+   ],
+   "metavar": "",
+   "help": "Do not embed the infojson as an attachment to the video file"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--parse-metadata"
+   ],
+   "metavar": "[WHEN:]FROM:TO",
+   "help": "Parse additional metadata like title/artist from other fields; see \"MODIFYING METADATA\" for details. Supported values of \"WHEN\" are the same as that of --use-postprocessor (default: pre_process)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--replace-in-metadata"
+   ],
+   "metavar": "[WHEN:]FIELDS REGEX REPLACE",
+   "help": "Replace text in a metadata field using the given regex. This option can be used multiple times. Supported values of \"WHEN\" are the same as that of --use-postprocessor (default: pre_process)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--xattrs"
+   ],
+   "metavar": "",
+   "help": "Write metadata to the video file's xattrs (using Dublin Core and XDG standards)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--concat-playlist"
+   ],
+   "metavar": "POLICY",
+   "help": "Concatenate videos in a playlist. One of \"never\", \"always\", or \"multi_video\" (default; only when the videos form a single show). All the video files must have the same codecs and number of streams to be concatenable. The \"pl_video:\" prefix can be used with \"--paths\" and \"--output\" to set the output filename for the concatenated files. See \"OUTPUT TEMPLATE\" for details"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--fixup"
+   ],
+   "metavar": "POLICY",
+   "help": "Automatically correct known faults of the file. One of never (do nothing), warn (only emit a warning), detect_or_warn (the default; fix the file if we can, warn otherwise), force (try fixing even if the file already exists)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--ffmpeg-location"
+   ],
+   "metavar": "PATH",
+   "help": "Location of the ffmpeg binary; either the path to the binary or its containing directory"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--exec"
+   ],
+   "metavar": "[WHEN:]CMD",
+   "help": "Execute a command, optionally prefixed with when to execute it, separated by a \":\". Supported values of \"WHEN\" are the same as that of --use-postprocessor (default: after_move). The same syntax as the output template can be used to pass any field as arguments to the command; however, for security reasons the only allowed conversions are: \"i\"/\"d\" (signed integer decimal), \"f\" (floating-point decimal) and \"q\" (shell-quoted). If no fields are passed, %(filepath,_filename|)q is appended to the end of the command. This option can be used multiple times"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-exec"
+   ],
+   "metavar": "",
+   "help": "Remove any previously defined --exec"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--convert-subs"
+   ],
+   "metavar": "FORMAT",
+   "help": "Convert the subtitles to another format (currently supported: ass, lrc, srt, vtt). Use \"--convert-subs none\" to disable conversion (default) (Alias: --convert- subtitles)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--convert-thumbnails"
+   ],
+   "metavar": "FORMAT",
+   "help": "Convert the thumbnails to another format (currently supported: jpg, png, webp). You can specify multiple rules using similar syntax as \"--remux-video\". Use \"--convert- thumbnails none\" to disable conversion (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--split-chapters"
+   ],
+   "metavar": "",
+   "help": "Split video into multiple files based on internal chapters. The \"chapter:\" prefix can be used with \"--paths\" and \"--output\" to set the output filename for the split files. See \"OUTPUT TEMPLATE\" for details"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-split-chapters"
+   ],
+   "metavar": "",
+   "help": "Do not split video based on chapters (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--remove-chapters"
+   ],
+   "metavar": "REGEX",
+   "help": "Remove chapters whose title matches the given regular expression. The syntax is the same as --download-sections. This option can be used multiple times"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-remove-chapters"
+   ],
+   "metavar": "",
+   "help": "Do not remove any chapters from the file (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--force-keyframes-at-cuts"
+   ],
+   "metavar": "",
+   "help": "Force keyframes at cuts when downloading/splitting/removing sections. This is slow due to needing a re-encode, but the resulting video may have fewer artifacts around the cuts"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--no-force-keyframes-at-cuts"
+   ],
+   "metavar": "",
+   "help": "Do not force keyframes around the chapters when cutting/splitting (default)"
+  },
+  {
+   "group": "Post-Processing Options",
+   "flags": [
+    "--use-postprocessor"
+   ],
+   "metavar": "NAME[:ARGS]",
+   "help": "The (case-sensitive) name of plugin postprocessors to be enabled, and (optionally) arguments to be passed to it, separated by a colon \":\". ARGS are a semicolon \";\" delimited list of NAME=VALUE. The \"when\" argument determines when the postprocessor is invoked. It can be one of \"pre_process\" (after video extraction), \"after_filter\" (after video passes filter), \"video\" (after --format; before --print/--output), \"before_dl\" (before each video download), \"post_process\" (after each video download; default), \"after_move\" (after moving the video file to its final location), \"after_video\" (after downloading and processing all formats of a video), or \"playlist\" (at end of playlist). This option can be used multiple times to add different postprocessors"
+  },
+  {
+   "group": "SponsorBlock Options",
+   "flags": [
+    "--sponsorblock-mark"
+   ],
+   "metavar": "CATS",
+   "help": "SponsorBlock categories to create chapters for, separated by commas. Available categories are sponsor, intro, outro, selfpromo, preview, filler, interaction, music_offtopic, hook, poi_highlight, chapter, all and default (=all). You can prefix the category with a \"-\" to exclude it. See [1] for descriptions of the categories. E.g. --sponsorblock-mark all,-preview [1] https://wiki.sponsor.ajay.a pp/w/Segment_Categories"
+  },
+  {
+   "group": "SponsorBlock Options",
+   "flags": [
+    "--sponsorblock-remove"
+   ],
+   "metavar": "CATS",
+   "help": "SponsorBlock categories to be removed from the video file, separated by commas. If a category is present in both mark and remove, remove takes precedence. The syntax and available categories are the same as for --sponsorblock-mark except that \"default\" refers to \"all,-filler\" and poi_highlight, chapter are not available"
+  },
+  {
+   "group": "SponsorBlock Options",
+   "flags": [
+    "--sponsorblock-chapter-title"
+   ],
+   "metavar": "TEMPLATE",
+   "help": "An output template for the title of the SponsorBlock chapters created by --sponsorblock-mark. The only available fields are start_time, end_time, category, categories, name, category_names. Defaults to \"[SponsorBlock]: %(category_names)l\""
+  },
+  {
+   "group": "SponsorBlock Options",
+   "flags": [
+    "--no-sponsorblock"
+   ],
+   "metavar": "",
+   "help": "Disable both --sponsorblock-mark and --sponsorblock-remove"
+  },
+  {
+   "group": "SponsorBlock Options",
+   "flags": [
+    "--sponsorblock-api"
+   ],
+   "metavar": "URL",
+   "help": "SponsorBlock API location, defaults to https://sponsor.ajay.app"
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--extractor-retries"
+   ],
+   "metavar": "RETRIES",
+   "help": "Number of retries for known extractor errors (default is 3), or \"infinite\""
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--allow-dynamic-mpd"
+   ],
+   "metavar": "",
+   "help": "Process dynamic DASH manifests (default) (Alias: --no-ignore-dynamic-mpd)"
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--ignore-dynamic-mpd"
+   ],
+   "metavar": "",
+   "help": "Do not process dynamic DASH manifests (Alias: --no-allow-dynamic-mpd)"
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--hls-split-discontinuity"
+   ],
+   "metavar": "",
+   "help": "Split HLS playlists to different formats at discontinuities such as ad breaks"
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--no-hls-split-discontinuity"
+   ],
+   "metavar": "",
+   "help": "Do not split HLS playlists into different formats at discontinuities such as ad breaks (default)"
+  },
+  {
+   "group": "Extractor Options",
+   "flags": [
+    "--extractor-args"
+   ],
+   "metavar": "IE_KEY:ARGS",
+   "help": "Pass ARGS arguments to the IE_KEY extractor. See \"EXTRACTOR ARGUMENTS\" for details. You can use this option multiple times to give arguments for different extractors"
+  },
+  {
+   "group": "Preset Aliases",
+   "flags": [
+    "-t"
+   ],
+   "metavar": "mp3",
+   "help": "-f 'ba[acodec^=mp3]/ba/b' -x --audio-format mp3"
+  },
+  {
+   "group": "Preset Aliases",
+   "flags": [
+    "-t"
+   ],
+   "metavar": "aac",
+   "help": "-f 'ba[acodec^=aac]/ba[acodec^=mp4a.40.]/ba/b' -x --audio-format aac"
+  },
+  {
+   "group": "Preset Aliases",
+   "flags": [
+    "-t"
+   ],
+   "metavar": "mp4",
+   "help": "--merge-output-format mp4 --remux-video mp4 -S vcodec:h264,lang,quality,res,fps,hdr:12,a codec:aac"
+  },
+  {
+   "group": "Preset Aliases",
+   "flags": [
+    "-t"
+   ],
+   "metavar": "mkv",
+   "help": "--merge-output-format mkv --remux-video mkv"
+  },
+  {
+   "group": "Preset Aliases",
+   "flags": [
+    "-t"
+   ],
+   "metavar": "sleep",
+   "help": "--sleep-subtitles 5 --sleep-requests 0.75 --sleep-interval 10 --max-sleep-interval 20"
+  }
+ ]
+}

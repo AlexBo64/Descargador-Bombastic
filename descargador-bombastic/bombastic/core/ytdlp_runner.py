@@ -18,6 +18,7 @@ from bombastic.core.binaries import Tool, locate
 from bombastic.core.media_info import MediaInfoError, parse_media_info
 from bombastic.core.paths import AppPaths
 from bombastic.core.process_control import kill_process_tree
+from bombastic.core.ytdlp_options import HelpParseError, save_catalog
 from bombastic.core.ytdlp_progress import ErrorLine, FileReady, ProgressTracker, parse_line
 
 log = logging.getLogger(__name__)
@@ -195,6 +196,89 @@ class InfoFetcher(QObject):
         self._done = True
         self._timer.stop()
         self.succeeded.emit(info)
+
+
+class OutputCollector(QObject):
+    """Ejecuta un comando corto y entrega su salida estándar completa."""
+
+    #: Emite ``(código de salida, salida)``; código -1 si no se ha podido lanzar.
+    finished = Signal(int, str)
+
+    def __init__(self, launch: Launch, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._launch = launch
+        self._stdout = b""
+        self._done = False
+        self._process = QProcess(self)
+        self._process.setProcessEnvironment(_environment())
+        self._process.readyReadStandardOutput.connect(self._read)
+        self._process.finished.connect(self._on_finished)
+        self._process.errorOccurred.connect(self._on_error)
+
+    def start(self) -> None:
+        self._process.start(*self._launch)
+
+    def _read(self) -> None:
+        self._stdout += bytes(self._process.readAllStandardOutput().data())
+
+    def _emit(self, code: int) -> None:
+        if not self._done:
+            self._done = True
+            self.finished.emit(code, self._stdout.decode("utf-8", errors="replace"))
+
+    def _on_error(self, error: QProcess.ProcessError) -> None:
+        if error == QProcess.ProcessError.FailedToStart:
+            self._emit(-1)
+
+    def _on_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
+        self._read()
+        self._emit(exit_code)
+
+
+class CatalogRefresher(QObject):
+    """Regenera el catálogo de opciones con ``yt-dlp --version`` y ``--help``."""
+
+    #: ``True`` si se ha guardado un catálogo nuevo.
+    finished = Signal(bool)
+
+    def __init__(self, launcher: Launcher, data_dir: Path, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._launcher = launcher
+        self._data_dir = data_dir
+        self._version = ""
+
+    def start(self) -> None:
+        self._run(["--version"], self._on_version)
+
+    def _run(self, args: list[str], slot: Callable[[int, str], None]) -> None:
+        launch = self._launcher(args)
+        if launch is None:
+            self.finished.emit(False)
+            return
+        collector = OutputCollector(launch, self)
+        collector.finished.connect(slot)
+        collector.finished.connect(collector.deleteLater)
+        collector.start()
+
+    def _on_version(self, code: int, output: str) -> None:
+        if code != 0:
+            self.finished.emit(False)
+            return
+        self._version = output.strip()
+        self._run(["--help"], self._on_help)
+
+    def _on_help(self, code: int, output: str) -> None:
+        if code != 0:
+            self.finished.emit(False)
+            return
+        try:
+            save_catalog(self._data_dir, output, self._version)
+        except (HelpParseError, OSError):
+            log.exception("Could not regenerate the yt-dlp option catalog")
+            self.finished.emit(False)
+            return
+        log.info("Regenerated yt-dlp option catalog for %s", self._version)
+        self.finished.emit(True)
 
 
 @dataclass(frozen=True)
